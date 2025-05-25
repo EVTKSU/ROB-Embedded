@@ -10,11 +10,11 @@
 // Global ODrive flag and debug string.
 extern bool systemInitialized;
 extern String odrvDebug;
-
+extern float target;
 // Declare the ODriveUART object so it can be used across modules.
 extern ODriveUART odrive;
 
-// ODrive function prototypes.
+// global ODrive function prototypes.
 void setupOdrv();
 void updateOdrvControl();
 

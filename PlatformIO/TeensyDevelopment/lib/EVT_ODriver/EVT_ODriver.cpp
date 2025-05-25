@@ -33,7 +33,7 @@ void configureAbsoluteReference(float absPos) {
     delay(20);
 }
 
-void configureTrapTrajLimits() {
+void configureTrapTrajLimits() {  // this sets the velocity and acceleration limits for the trapezoidal trajectory
     Serial.println("Setting trap-traj vel/accel limits...");
     odrive_serial.println("w axis0.trap_traj.config.vel_limit "   + String(VEL_LIMIT));
     delay(20);
@@ -49,18 +49,18 @@ void initCalibration() {
     Serial.print("pre‑cal abs pos: ");
     Serial.println(absPos, 4);
     delay(3000);
-    // Motor & encoder offset calibration
+    // Motor & encoder offset calibration (does this in real life you see it move)
     odrive.setState(AXIS_STATE_MOTOR_CALIBRATION);
     delay(4000);
     odrive.clearErrors();
     odrive.setState(AXIS_STATE_ENCODER_OFFSET_CALIBRATION);
     delay(4000);
 
-    // Grab absolute encoder position AFTER calibration
     
 
     // Configure ABS reference frame
-    configureAbsoluteReference(absPos);
+    configureAbsoluteReference(absPos); 
+    //not sure if this does anything yet but im too afraid to remove it
 
     // Velocity/accel caps
     configureTrapTrajLimits();
@@ -121,6 +121,7 @@ void updateOdrvControl() {
     }
     if (ch4 < 1500) errorClearFlag = false;
 
+
     // Trigger calibration/homing on ch5
     if (!systemInitialized) {
         if (channels[5] > 900) {
@@ -134,27 +135,27 @@ void updateOdrvControl() {
     }
 
     // SBUS ch3 → offsetCmd (deadband + mapping)
-    int ch = constrain(channels[3], 350, 1811);
-    const int neutral  = 772, deadband = 50;
+    int ch = constrain(channels[3], 350, 1811);  // 350-1811 is the range of the RC channel
+    const int neutral  = 772, deadband = 50; // neutral is the center position (sbus val 772), deadband is the deadzone around it
     const float maxAng = 2.4f;
-    float offsetCmd = 0;
+    float offsetCmd = 0; // offset command is the joystick value mapped to radians
     if      (ch > neutral + deadband)
         offsetCmd = (ch - (neutral+deadband)) / float(1811-(neutral+deadband)) * maxAng;
     else if (ch < neutral - deadband)
         offsetCmd = -((neutral-deadband)-ch) / float((neutral-deadband)-350) * maxAng;
     // else offsetCmd = 0 → hold zero
-    else {
+    else { // if within deadband, hold zero
         offsetCmd = 0;
-        
     }
-float target;
+
+    float target; // creating steering value to command ODrive
     if (offsetCmd == 0.0f) {
-        target = MEMORY_ZERO;
+        target = MEMORY_ZERO; // memory zero is hard coded zero position so it goes there
     } else {
-        target = SteeringCommandPosition + offsetCmd;
+        target = SteeringCommandPosition + offsetCmd; // when joystiick moved it controls the steering
     }
     lastTargetPosition = target;
-    odrive.setPosition(target, VEL_LIMIT);
+    odrive.setPosition(target, VEL_LIMIT); // sets target position with velocity limit so we dont blow shit up
     
     // Print telemetry every 100 ms
     if (millis() - lastPrintTime > 100) {

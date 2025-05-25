@@ -66,7 +66,7 @@ void updateAutonomousMode() {
 
     // Retrieve current ODrive feedback.
     ODriveFeedback fb = odrive.getFeedback();
-    float steeringAngle = fb.pos;
+    float steeringAngle = target;
 
     // Get ODrive parameters.
     float odrvCurrent = odrive.getParameterAsFloat("ibus");
