@@ -4,6 +4,10 @@
 HardwareSerial &odrive_serial = Serial6;
 ODriveUART    odrive(odrive_serial);
 
+float target; // creating steering value to command ODrive
+
+
+
 // ——— Constants ———
 float MEMORY_ZERO = -1.77f;  // hard coded zero position
 const float          VEL_LIMIT   = 5.0f;     // rad/s
@@ -137,6 +141,7 @@ void updateOdrvControl() {
     // SBUS ch3 → offsetCmd (deadband + mapping)
     int ch = constrain(channels[3], 350, 1811);  // 350-1811 is the range of the RC channel
     const int neutral  = 772, deadband = 50; // neutral is the center position (sbus val 772), deadband is the deadzone around it
+     
     const float maxAng = 2.4f;
     float offsetCmd = 0; // offset command is the joystick value mapped to radians
     if      (ch > neutral + deadband)
@@ -148,7 +153,7 @@ void updateOdrvControl() {
         offsetCmd = 0;
     }
 
-    float target; // creating steering value to command ODrive
+    
     if (offsetCmd == 0.0f) {
         target = MEMORY_ZERO; // memory zero is hard coded zero position so it goes there
     } else {
@@ -165,4 +170,9 @@ void updateOdrvControl() {
         Serial.print("  CH3:"); Serial.println(ch);
         lastPrintTime = millis();
     }
+
+
+}
+float getTarget() {
+    return target;
 }

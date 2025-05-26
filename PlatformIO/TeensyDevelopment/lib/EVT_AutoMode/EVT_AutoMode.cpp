@@ -66,7 +66,7 @@ void updateAutonomousMode() {
 
     // Retrieve current ODrive feedback.
     ODriveFeedback fb = odrive.getFeedback();
-    float steeringAngle = target;
+    float steeringAngle = fb.pos;
 
     // Get ODrive parameters.
     float odrvCurrent = odrive.getParameterAsFloat("ibus");
@@ -77,9 +77,10 @@ void updateAutonomousMode() {
     float rpm = vesc1.data.rpm;
     float vescVoltage = vesc1.data.inpVoltage;
     float vescCurrent = vesc1.data.avgInputCurrent + vesc2.data.avgInputCurrent;
+    float target = getTarget();  // Get the target position from ODrive
 
     // Send telemetry packet and check for incoming UDP commands.
-    sendTelemetry(rpm, vescVoltage, odrvVoltage, vescCurrent, odrvCurrent, steeringAngle);
+    sendTelemetry(rpm, vescVoltage, odrvVoltage, vescCurrent, odrvCurrent, target);
     std::string rawCommands = receiveUdp();
     if (!rawCommands.empty()) {
         setControls(rawCommands);

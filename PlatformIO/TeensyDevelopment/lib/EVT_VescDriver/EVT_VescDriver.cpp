@@ -4,6 +4,10 @@
 VescUart vesc1;
 VescUart vesc2;
 String vescDebug = "";
+String vesc1ErrorString;
+
+
+
 
 void setupVesc() {
     Serial1.begin(115200);
@@ -62,4 +66,5 @@ void updateVescControl() {
     
     
 }
+
 
