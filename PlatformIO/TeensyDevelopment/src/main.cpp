@@ -34,5 +34,8 @@ void loop() {
   } else {
     updateVescControl();
     updateOdrvControl();
+    
+   
+    
   }
 }

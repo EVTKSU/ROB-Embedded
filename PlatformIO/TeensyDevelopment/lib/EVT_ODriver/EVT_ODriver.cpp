@@ -9,7 +9,7 @@ float target; // creating steering value to command ODrive
 
 
 // ——— Constants ———
-float MEMORY_ZERO = -1.77f;  // hard coded zero position
+float MEMORY_ZERO = 0;  // hard coded zero position
 const float          VEL_LIMIT   = 5.0f;     // rad/s
 const float          ACCEL_LIMIT = 1.0f;     // rad/s²
 
@@ -43,6 +43,19 @@ void configureTrapTrajLimits() {  // this sets the velocity and acceleration lim
     delay(20);
     odrive_serial.println("w axis0.trap_traj.config.accel_limit " + String(ACCEL_LIMIT));
     delay(20);
+}
+
+//get active errors from ODrive, thanks odrive for making this so easy
+int getActiveErrors() {
+    // Path exactly as exposed in the firmware for active errors :contentReference[oaicite:0]{index=0}
+    long errs = odrive.getParameterAsInt("axis0.active_errors");
+    return (long)errs;
+}
+
+int getDisarmReason() {
+    // Path exactly as exposed in the firmware for disarm reason :contentReference[oaicite:0]{index=0}
+    long reason = odrive.getParameterAsInt("axis0.disarm_reason");
+    return (long)reason;
 }
 
 // ——— Calibration & Homing ———
@@ -161,18 +174,23 @@ void updateOdrvControl() {
     }
     lastTargetPosition = target;
     odrive.setPosition(target, VEL_LIMIT); // sets target position with velocity limit so we dont blow shit up
+       
     
+    long faults = getActiveErrors();
+    long reason = odrive.getParameterAsInt("axis0.disarm_reason");
     // Print telemetry every 100 ms
     if (millis() - lastPrintTime > 100) {
         ODriveFeedback fb = odrive.getFeedback();
         Serial.print("Tgt:"); Serial.print(lastTargetPosition,2);
         Serial.print("  Pos:"); Serial.print(fb.pos,2);
         Serial.print("  CH3:"); Serial.println(ch);
-        lastPrintTime = millis();
+         Serial.printf("Active errors: 0x%lX\n", faults);
+        Serial.printf("Disarm reason: 0x%lX\n", reason);
     }
 
-
+    lastPrintTime = millis();
 }
+
 float getTarget() {
     return target;
 }

@@ -3,11 +3,14 @@
 
 #include <Arduino.h>
 #include <ODriveUART.h>
+#include <ODriveArduino.h>
 #include <SoftwareSerial.h>
 
 #define STATUS_LED_PIN 13
 
 // Global ODrive flag and debug string.
+
+extern HardwareSerial &odrive_serial;
 extern bool systemInitialized;
 extern String odrvDebug;
 extern float target;
@@ -18,5 +21,6 @@ extern ODriveUART odrive;
 void setupOdrv();
 void updateOdrvControl();
 float getTarget();
+
 
 #endif // EVT_ODRIVER_H
