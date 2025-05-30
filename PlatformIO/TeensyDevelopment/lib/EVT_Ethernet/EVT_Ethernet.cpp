@@ -16,8 +16,8 @@ static char telemetryPacketBuffer[UDP_TX_PACKET_MAX_SIZE];
 
 
 // Telemetry destination details.
-static IPAddress telemetryDestIP(192, 168, 0, 132);
-static const uint16_t TELEMETRY_DEST_PORT = 8888;
+static IPAddress telemetryDestIP(192, 168, 0, 10);  // Panda IP
+static const uint16_t TELEMETRY_DEST_PORT = 5005;  // Matches receiver
 
 // Setup function for initializing Ethernet and UDP.
 void setupTelemetryUDP() {
