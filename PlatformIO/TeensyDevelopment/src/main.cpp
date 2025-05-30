@@ -1,53 +1,36 @@
-#include <SPI.h>
-#include <Ethernet.h>
-#include <EthernetUdp.h>
+#include <NativeEthernet.h>
+#include <NativeEthernetUdp.h>
 
-// Teensy's MAC and static IP
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-IPAddress ip(192, 168, 0, 177);  // Match your network config
-
-// Port to listen on
-const unsigned int localPort = 8888;
-
-// Create EthernetUDP instance
+IPAddress ip(192, 168, 0, 177);
 EthernetUDP Udp;
 
-// Buffer to hold incoming packet
-char packetBuffer[UDP_TX_PACKET_MAX_SIZE];  // Standard max size is 24 bytes
+char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial) {
-    ; // Wait for Serial to be ready (for some Teensy boards)
-  }
+  while (!Serial);
 
-  Serial.println("Starting UDP Receiver");
+  Serial.println("Starting NativeEthernet UDP Receiver...");
 
-  // Start Ethernet and bind UDP
   Ethernet.begin(mac, ip);
-  Udp.begin(localPort);
-
-  // Network checks
-  if (Ethernet.hardwareStatus() == EthernetNoHardware) {
-    Serial.println("Ethernet shield not found");
-  } else {
-    Serial.println("Ethernet hardware is present");
-  }
+  delay(1000);  // Allow time for hardware setup
 
   if (Ethernet.linkStatus() == LinkON) {
-    Serial.println("Ethernet cable is connected");
+    Serial.println("Ethernet cable is connected.");
   } else {
-    Serial.println("Ethernet cable is NOT connected pi5 <-> teensy");
+    Serial.println("Ethernet cable is NOT connected.");
   }
+
+  Udp.begin(8888);
+  Serial.println("UDP listener started on port 8888");
 }
 
 void loop() {
   int packetSize = Udp.parsePacket();
-  if (packetSize > 0) {
-    int len = Udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE - 1);
-    if (len > 0) {
-      packetBuffer[len] = '\0'; // Null-terminate the string
-    }
+  if (packetSize) {
+    int len = Udp.read(packetBuffer, sizeof(packetBuffer) - 1);
+    if (len > 0) packetBuffer[len] = '\0';
 
     Serial.print("Received packet: ");
     Serial.println(packetBuffer);
