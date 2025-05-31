@@ -67,4 +67,21 @@ void updateVescControl() {
     
 }
 
+void updateVescControl(float throttle_percent) {
+
+    // mappint -100 -> +100 to 350 -> 1700
+    int mapped_throttle = int(throttle_percent * 75);
+    Serial.println();
+    Serial.print("mapped throttle: ");
+    Serial.print(mapped_throttle);
+    Serial.println();
+
+    // Send the RPM command to the VESC
+    vesc1.setRPM(mapped_throttle);
+    vesc2.setRPM(mapped_throttle);
+
+    
+    
+}
+
 

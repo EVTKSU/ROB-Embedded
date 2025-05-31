@@ -78,17 +78,18 @@ void loop() {
 
         updateVescControl();
         updateOdrvControl();
+        loops_per_telem = 10;
         
       }
       break;
 
     case AUTO:
       if (auto_switch < 1000) {
-
         SetState(IDLE);
       } else {
-      Serial.println("automode not implemented yet :(");
-      delay(300);
+
+        updateAutonomousMode();
+        loops_per_telem = 1;
       }
       break;
 
@@ -116,6 +117,7 @@ void loop() {
     
     case IDLE:
         updateSbusData();
+        loops_per_telem = 30;
       // Check if the system is idle and not in error state. if idle, it waits for commands.
       if (calibration_switch > 400 && auto_switch < 1000) {
 
@@ -145,5 +147,8 @@ void loop() {
     SetState(IDLE);
   }
 
+  // if (loops_per_telem % loop_count == 0){
+  //   sendTelemetry();
+  // }
 
 }

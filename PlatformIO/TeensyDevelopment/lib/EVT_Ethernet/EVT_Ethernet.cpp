@@ -4,6 +4,10 @@
 #include <sstream>
 #include <vector>
 #include <cstdlib>
+#include "EVT_RC.h"
+#include "EVT_StateMachine.h"
+#include "EVT_VescDriver.h"
+#include "EVT_ODriver.h"
 
 // Global object definitions.
 EthernetUDP Udp;
@@ -11,8 +15,8 @@ IPAddress ip(192, 168, 0, 177);
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
 // Internal buffers for UDP packets.
-char autoBuffer[UDP_TX_PACKET_MAX_SIZE];
-static char telemetryPacketBuffer[UDP_TX_PACKET_MAX_SIZE];
+char autoBuffer[256];
+static char telemetryPacketBuffer[256];
 
 
 // Telemetry destination details.
@@ -39,20 +43,54 @@ void setupTelemetryUDP() {
   delay(1000);
 }
 
+
 // Function to send telemetry data over UDP and display on Serial.
-void sendTelemetry(float rpm, float vescVoltage, float odrvVoltage, float avgMotorCurrent, float odrvCurrent, float steeringAngle) {
-  snprintf(telemetryPacketBuffer, sizeof(telemetryPacketBuffer),
-           "%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
-           rpm, vescVoltage, odrvVoltage, avgMotorCurrent, odrvCurrent, steeringAngle);
-  
-  // Display telemetry data on Serial.
- // Serial.print("Sending telemetry: ");
-  //Serial.println(telemetryPacketBuffer);
-  
-  Udp.beginPacket(telemetryDestIP, TELEMETRY_DEST_PORT);
-  Udp.write(telemetryPacketBuffer);
-  Udp.endPacket();
+// Function to send telemetry data over UDP and display on Serial.
+void sendTelemetry() {
+    // Retrieve current ODrive feedback.
+    ODriveFeedback fb = odrive.getFeedback();
+    float steeringAngle = fb.pos;
+
+    // Get current system state
+    const char* state = StateToString(GetState());
+
+    // Get ODrive telemetry
+    float odrvCurrent = odrive.getParameterAsFloat("ibus");
+    float odrvVoltage = odrive.getParameterAsFloat("vbus_voltage");
+
+    // Get VESC telemetry
+    float rpm = vesc1.data.rpm;
+    float vescVoltage = vesc1.data.inpVoltage;
+    float vescCurrent = vesc1.data.avgInputCurrent + vesc2.data.avgInputCurrent;
+
+    // Update RC data and sample channels
+    updateSbusData();
+    float rcSteeringInput = channels[3];
+    float rcThrottleInput = channels[1];
+
+    // Emergency flag (disabled for now)
+    int emergency = 0;
+
+    // Format the telemetry string
+    snprintf(telemetryPacketBuffer, sizeof(telemetryPacketBuffer),
+             "%d,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
+             emergency,
+             state,
+             rpm,
+             steeringAngle,
+             odrvVoltage,
+             vescVoltage,
+             odrvCurrent,
+             vescCurrent,
+             rcSteeringInput,
+             rcThrottleInput);
+
+    // Send via UDP
+    Udp.beginPacket(telemetryDestIP, TELEMETRY_DEST_PORT);
+    Udp.write(telemetryPacketBuffer);
+    Udp.endPacket();
 }
+
 
 std::string receiveUdp() {
   int packetSize = Udp.parsePacket();

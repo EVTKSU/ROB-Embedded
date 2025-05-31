@@ -4,86 +4,65 @@
 #include "EVT_ODriver.h"
 #include "EVT_Ethernet.h"
 
-// Global variable for UDP data processing.
-float raw_throttle = 0.0;
+// Global variables for UDP control data
+float throttle = 0.0;
+float steering = 0.0;
 bool emergency = false;
 
-// Function to parse UDP data and update control variables.
-// Note: The UDP steering value is ignored because we rely on ODrive's feedback.
+// Function to parse UDP data and update control variables
+// Expected format: "throttle,steering,emergency"
 void setControls(const std::string &udpData) {
-    std::istringstream ss(udpData);
-    std::string token;
-    std::vector<std::string> tokens;
+    // Copy string to modifiable buffer
+    char udpCopy[128];
+    strncpy(udpCopy, udpData.c_str(), sizeof(udpCopy) - 1);
+    udpCopy[sizeof(udpCopy) - 1] = '\0';  // Ensure null termination
 
-    while (std::getline(ss, token, ',')) {
-        tokens.push_back(token);
+    char* token = strtok(udpCopy, ",");
+    int index = 0;
+
+    while (token != nullptr) {
+        switch (index) {
+            case 0:
+                throttle = atof(token);
+                break;
+            case 1:
+                steering = atof(token);
+                break;
+            case 2:
+                emergency = (atoi(token) != 0);
+                break;
+        }
+
+        index++;
+        token = strtok(nullptr, ",");
     }
 
-    if (tokens.size() >= 3) {
-        // Skip the UDP steering value (tokens[0]) and use only throttle and emergency.
-        raw_throttle = std::atof(tokens[1].c_str());
-        emergency = (std::atoi(tokens[2].c_str()) != 0);
-    } else {
-        Serial.print("Insufficient data received to set controls: ");
+    if (index < 3) {
+        Serial.print("Malformed control packet (expected 3 fields): ");
         Serial.println(udpData.c_str());
     }
+
 }
 
-// Runs the mapped control commands using the RC center steering value captured from ODrive feedback.
-void runMappedControls() {
-    // Capture the RC center steering value upon entering autonomous mode.
-    static bool centerCaptured = false;
-    static float autoCenterSteering = 0.0f;
-
-    if (!centerCaptured) {
-        // Capture the center from ODrive's current reported steering position.
-        ODriveFeedback fb = odrive.getFeedback();
-        autoCenterSteering = fb.pos;
-        centerCaptured = true;
-        Serial.print("Captured autonomous center steering value from ODrive: ");
-        Serial.println(autoCenterSteering);
-    }
-
-    if (!emergency) {
-        // Map throttle percentage (0-100) to VESC RPM command (0-7500 RPM).
-        float rpmCommand = (raw_throttle / 100.0f) * 7500.0f;
-        vesc1.setRPM(rpmCommand);
-        vesc2.setRPM(rpmCommand);
-
-        // Keep steering at the captured center.
-        odrive.setPosition(autoCenterSteering, 27.0f);
-    } else {
-        // In an emergency, stop throttle and hold the steering at the captured center.
-        vesc1.setRPM(0);
-        vesc2.setRPM(0);
-        odrive.setPosition(autoCenterSteering, 27.0f);
-    }
-}
 
 void updateAutonomousMode() {
     // Set autonomous mode debug message.
     odrvDebug = "Autonomous mode active.";
-
-    // Retrieve current ODrive feedback.
-    ODriveFeedback fb = odrive.getFeedback();
-    float steeringAngle = fb.pos;
-
-    // Get ODrive parameters.
-    float odrvCurrent = odrive.getParameterAsFloat("ibus");
-    float odrvVoltage = odrive.getParameterAsFloat("vbus_voltage");
-
-    // Update VESC telemetry.
-    vesc1.getVescValues();
-    float rpm = vesc1.data.rpm;
-    float vescVoltage = vesc1.data.inpVoltage;
-    float vescCurrent = vesc1.data.avgInputCurrent + vesc2.data.avgInputCurrent;
-    float target = getTarget();  // Get the target position from ODrive
-
-    // Send telemetry packet and check for incoming UDP commands.
-    sendTelemetry(rpm, vescVoltage, odrvVoltage, vescCurrent, odrvCurrent, target);
+    
     std::string rawCommands = receiveUdp();
+
+        Serial.print(" | Throttle: ");
+        Serial.print(throttle);
+        Serial.print(" Steering: ");
+        Serial.print(steering);
+        Serial.print(" | Emergency: ");
+        Serial.println(emergency ? "YES" : "NO");
+
+    updateVescControl(throttle);
+    sendTelemetry();
+
     if (!rawCommands.empty()) {
         setControls(rawCommands);
     }
-    runMappedControls();
+
 }
