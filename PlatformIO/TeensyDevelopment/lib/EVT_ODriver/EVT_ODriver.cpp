@@ -7,8 +7,8 @@ ODriveUART    odrive(odrive_serial);
 float target;                     // creating steering value to command ODrive
 float absCenterPos    = 0.00f;     // ← NEW: manual “zero” reference
 // ——— Constants ———
-const float VEL_LIMIT    = 68.0f;    
-const float ACCEL_LIMIT  = 40.0f;    
+const float VEL_LIMIT    = 30.0f;    
+const float ACCEL_LIMIT  = 20.0f;    
 const float Two_pi       = 2.0f * 3.14159265358979323846f;
 static const float MAX_STEERING_TURNS    = 5.50;  
 
@@ -37,9 +37,9 @@ void configureAbsoluteReference(float absPos) {
 
 void configureTrapTrajLimits() {
     Serial.println("Setting trap-traj vel/accel limits...");
-    odrive_serial.println("w axis0.trap_traj.config.vel_limit "   + String(VEL_LIMIT));
+    odrive_serial.println("w axis0.controller.config.vel_limit " + String(VEL_LIMIT));
     delay(20);
-    odrive_serial.println("w axis0.trap_traj.config.accel_limit " + String(ACCEL_LIMIT));
+    odrive_serial.println("w axis0.controller.config.accel_limit " + String(ACCEL_LIMIT));
     delay(20);
 }
 
@@ -104,7 +104,7 @@ void initCalibration() {
     
 
     // Switch to trapezoidal trajectory input mode
-    odrive_serial.println("w axis0.controller.config.input_mode 5");
+    odrive_serial.println("w axis0.controller.config.input_mode 1");
     delay(100);
     configureTrapTrajLimits(); // sets velocity and acceleration limits
     Serial.println("Trapezoidal trajectory input mode enabled.");
@@ -193,7 +193,7 @@ void updateOdrvControl() {
     }
 
     // Send position command (in turns) with velocity limit
-    odrive.setPosition(target, VEL_LIMIT, 0.0f); // 0.0f for no torque feedforward
+    odrive.setPosition(target); // 0.0f for no torque feedforward
 
     long faults = getActiveErrors();
     long reason = getDisarmReason();
@@ -206,9 +206,10 @@ void updateOdrvControl() {
         Serial.print("Target()):");   Serial.print(target, 4);
         Serial.print("  Pos(turns):"); Serial.print(fb.pos, 4);
         Serial.print("  CH3:");        Serial.println(ch);
-        Serial.printf("Active errors: 0x%lX\n", faults);
-        Serial.printf("Disarm reason: 0x%lX\n", reason);
-        Serial.printf("Current input_mode = %lx\n", mode);
+        Serial.print("Vel(rad/s):");  Serial.print(fb.vel, 4);
+       // Serial.printf("Active errors: 0x%lX\n", faults);
+       // Serial.printf("Disarm reason: 0x%lX\n", reason);
+       // Serial.printf("Current input_mode = %lx\n", mode);
         lastPrintTime = millis();
     }
 }
