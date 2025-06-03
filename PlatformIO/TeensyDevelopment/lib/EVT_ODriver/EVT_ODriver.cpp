@@ -8,7 +8,7 @@ float target;                     // creating steering value to command ODrive
 float absCenterPos    = 0.00f;     // ← NEW: manual “zero” reference
 // ——— Constants ———
 const float VEL_LIMIT    = 30.0f;    
-const float ACCEL_LIMIT  = 20.0f;    
+const float ACCEL_LIMIT  = 14.0f;    
 const float Two_pi       = 2.0f * 3.14159265358979323846f;
 static const float MAX_STEERING_TURNS    = 5.50;  
 
@@ -169,6 +169,7 @@ void updateOdrvControl() {
         }
     }
 
+    
     // SBUS ch3 → offsetCmd (deadband + mapping), in radians
     int ch = constrain(channels[3], 377, 1763);
     const int neutral    = 1075;
@@ -192,12 +193,13 @@ void updateOdrvControl() {
         target = absCenterPos;
     }
 
+
     // Send position command (in turns) with velocity limit
     odrive.setPosition(target); // 0.0f for no torque feedforward
 
-    long faults = getActiveErrors();
-    long reason = getDisarmReason();
-    long mode = getInputMode();
+    // long faults = getActiveErrors();
+    // long reason = getDisarmReason();
+    // long mode = getInputMode();
     // Print telemetry every 100 ms
     if (millis() - lastPrintTime > 100) {
         ODriveFeedback fb = odrive.getFeedback();
