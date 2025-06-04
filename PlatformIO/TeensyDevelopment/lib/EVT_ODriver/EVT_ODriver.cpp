@@ -10,10 +10,10 @@ float target;                     // creating steering value to command ODrive
 float absCenterPos    = 0.00f;     // ← NEW: manual “zero” reference
 
 // ——— Constants ———
-const float VEL_LIMIT    = 30.0f;    
-const float ACCEL_LIMIT  = 14.0f;    
+const float VEL_LIMIT    = 24.0f;    
+const float ACCEL_LIMIT  = 10.0f;    
 const float Two_pi       = 2.0f * 3.14159265358979323846f;
-static const float MAX_STEERING_TURNS    = 5.50;  
+static const float MAX_STEERING_TURNS    = 2.75;  
 
 const float rateLimit = VEL_LIMIT;
 SlewRateLimiter limiter = SlewRateLimiter(rateLimit);
