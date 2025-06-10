@@ -48,8 +48,8 @@ void setup() {
 void loop() {
 
   loop_count++;
-  updateSbusData();
-
+  updateSbusData(); // reads the RC reciever to get sbus data
+  sendTelemetry();// sends telemetry data over UDP to panda 
   // add switches to corresponding RC channels here
   auto_switch = channels[6];
   calibration_switch = channels[5]; // just for calibration out of idle on starup and starts RC

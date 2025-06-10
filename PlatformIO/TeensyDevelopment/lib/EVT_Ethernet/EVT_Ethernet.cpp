@@ -50,14 +50,15 @@ void sendTelemetry() {
     // Retrieve current ODrive feedback.
     ODriveFeedback fb = odrive.getFeedback();
     float steeringAngle = fb.pos;
-
+    float target = getTarget(); // Get the current target position from ODrive
+ 
     // Get current system state
     const char* state = StateToString(GetState());
 
     // Get ODrive telemetry
     float odrvCurrent = odrive.getParameterAsFloat("ibus");
     float odrvVoltage = odrive.getParameterAsFloat("vbus_voltage");
-
+    
     // Get VESC telemetry
     float rpm = vesc1.data.rpm;
     float vescVoltage = vesc1.data.inpVoltage;
@@ -73,7 +74,7 @@ void sendTelemetry() {
 
     // Format the telemetry string
     snprintf(telemetryPacketBuffer, sizeof(telemetryPacketBuffer),
-             "%d,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
+             "%d,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
              emergency,
              state,
              rpm,
@@ -82,6 +83,7 @@ void sendTelemetry() {
              vescVoltage,
              odrvCurrent,
              vescCurrent,
+             target,  // target is the steering position from odrive
              rcSteeringInput,
              rcThrottleInput);
 
