@@ -9,6 +9,7 @@ String vesc1ErrorString;
 
 float brakeCommand = 0.0;
 
+bool brakingActive = (brakeCommand > 0.5f); // small threshold to avoid chatter
 
 void setupVesc() {
     Serial1.begin(115200);
@@ -65,7 +66,7 @@ void updateVescControl() {
 
     float brakeRange = float(neutral_brake - brake_max);     // e.g., 1030 - 330 = 700
     float brakeProp  = float(neutral_brake - ch_brake) / brakeRange; // 0..1
-    brakeCommand = brakeProp * 40.0f;                        
+    brakeCommand = brakeProp * 7.0f;          // how many amps we want the brake current to be              
     vesc1.setBrakeCurrent(brakeCommand);
     vesc2.setBrakeCurrent(brakeCommand);
        Serial.print("brake current");
@@ -90,6 +91,18 @@ void updateVescControl() {
 
  // --- NEW: Coast in neutral, speed mode otherwise ---
 bool inDeadband = (ch_vesc >= neutral - deadband) && (ch_vesc <= neutral + deadband);
+
+
+
+    // --- NEW: Braking gate (prevents RPM commands this loop if braking is active)
+bool brakingActive = (brakeCommand > 0.5f); // small threshold avoids chatter around zero
+if (brakingActive) {
+    // Brake was already sent above; just avoid sending RPM in the same loop
+    return;
+}
+// brake didnt work because when we called the brake it kept running the loop and set rpm right after calling the brake.
+//fixed! 
+
 
 if (inDeadband) {
     // Switch to current mode with 0 A to avoid auto-braking in speed mode
