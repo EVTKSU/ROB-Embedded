@@ -249,24 +249,24 @@ void updateOdrvControl() {
     // long reason = getDisarmReason();
     // long mode = getInputMode();
 
-    // Print telemetry every 100 ms
-    if (millis() - lastPrintTime > 100) {
-        ODriveFeedback fb = odrive.getFeedback();
-        Serial.print("Pos(turns): ");
-        Serial.print(fb.pos, 6);
+    // // Print telemetry every 100 ms
+    // if (millis() - lastPrintTime > 100) {
+    //     ODriveFeedback fb = odrive.getFeedback();
+    //     Serial.print("Pos(turns): ");
+    //     Serial.print(fb.pos, 6);
 
-        Serial.print("Target()):");   Serial.print(target, 4);
-        Serial.print("  Pos(turns):"); Serial.print(fb.pos, 4);
-        Serial.print("  CH3:");        Serial.println(ch);
+    //     Serial.print("Target()):");   Serial.print(target, 4);
+    //     Serial.print("  Pos(turns):"); Serial.print(fb.pos, 4);
+    //     Serial.print("  CH3:");        Serial.println(ch);
 
-        Serial.print("Vel(rad/s):");  Serial.print(fb.vel, 4);
+    //     Serial.print("Vel(rad/s):");  Serial.print(fb.vel, 4);
 
-        // Serial.printf("Active errors: 0x%lX\n", faults);
-        // Serial.printf("Disarm reason: 0x%lX\n", reason);
-        // Serial.printf("Current input_mode = %lx\n", mode);
+    //     // Serial.printf("Active errors: 0x%lX\n", faults);
+    //     // Serial.printf("Disarm reason: 0x%lX\n", reason);
+    //     // Serial.printf("Current input_mode = %lx\n", mode);
 
-        lastPrintTime = millis();
-    }
+    //     lastPrintTime = millis();
+    // }
 }
 
 
