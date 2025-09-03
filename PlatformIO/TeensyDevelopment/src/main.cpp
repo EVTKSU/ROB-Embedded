@@ -18,6 +18,9 @@ void setup() {
   Serial.println("Initializing modules...");
   setupTelemetryUDP();
   setupSbus();
+
+
+  
   setupVesc();
   setupOdrv();
   delay(200);
