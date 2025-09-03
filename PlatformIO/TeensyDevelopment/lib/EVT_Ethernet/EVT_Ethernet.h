@@ -11,9 +11,24 @@ extern EthernetUDP Udp;
 extern IPAddress ip;
 extern byte mac[];
 
-// Telemetry function prototypes.
+
+/**
+ * @brief Setup method for initialization of Ethernet and UDP communications 
+ */
 void setupTelemetryUDP();
+
+
+/**
+ * @brief Send telemetry data over UDP and display the values on the Serial Monitor 
+ */
 void sendTelemetry();
+
+
+/**
+ * @brief Receives the UDP value from the Latte Panda 
+ * 
+ * @return The received UDP string 
+ */
 std::string receiveUdp();
 
 

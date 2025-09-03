@@ -7,16 +7,18 @@
  * @brief Enum representing the different states of the system.
  */
 enum STATE {
-    NONE,   ///< No state defined.
-    INIT,   ///< Initialization state.
-    IDLE, ///< Idle state.  
-    CALIB,  ///< Calibration state.
-    RC,     ///< Remote Control state.
-    AUTO,   ///< Autonomous state.
-    ERR,     ///< Error state.
+    NONE,  // No state defined.
+    INIT,  // Initialization state.
+    IDLE,  // Idle state.  
+    CALIB, // Calibration state.
+    RC,    // Remote Control state.
+    AUTO,  // Autonomous state.
+    ERR,   // Error state.
 };
+
+
 const char *state_names[] = {
-   "None",           // NONE
+   "None",            // NONE
     "Initialization", // INIT
     "Idle",           // IDLE   <-- insert
     "Calibration",    // CALIB
@@ -25,13 +27,10 @@ const char *state_names[] = {
     "Error"           // ERR
     // (no entry for STATE_COUNT)
 };
-/**
- * @brief The current state of the system.
- *
- * This global variable holds the current state and can be accessed by modules that
- * include this header.
- */
-extern STATE CurrentState;
+
+
+extern STATE CurrentState; // Current state of the system (Accessible by other modules)
+
 
 /**
  * @brief Retrieves the current state.
@@ -40,15 +39,16 @@ extern STATE CurrentState;
  */
 STATE GetState();
 
+
 /**
- * @brief Sets the system state.
+ * @brief Updates the global state and prints a message via Serial.
  * 
- * This function updates the global state and prints a message via Serial.
- * If the new state is ERR, it prints an error message.
+ * @note If the new state is ERR, it prints an error message.
  * 
- * @param newState The new state to set.
+ * @param newState The new state to set
  */
 void SetState(STATE newState);
+
 
 /**
  * @brief Sets the error state and prints detailed error information.
@@ -58,17 +58,22 @@ void SetState(STATE newState);
  */
 void SetErrorState(const char* location, const char* reason);
 
+
 /**
  * @brief Converts a STATE enum value to a C-style string.
- *
- * This helper function is used to print the state as a string instead of an integer.
  *
  * @param s The state enum value.
  * @return A C-style string representing the state.
  */
 const char* StateToString(STATE s);
+
+
+/**
+ * @brief Prints the current state to the Serial Monitor
+ */
 void PrintState();
-void errorCheck();
+
+
 // Error location constants
 static const char* const ERR_VESC     = "vesc";
 static const char* const ERR_ODRIVE   = "odrive";
@@ -76,9 +81,9 @@ static const char* const ERR_SBUS     = "sbus";
 static const char* const ERR_ETHERNET = "ethernet";
 
 // VESC fault reason constants
-static const char* const ERR_VESC_FAULT_CODE_NONE           = "FAULT_CODE_NONE";           // 0
+static const char* const ERR_VESC_FAULT_CODE_NONE             = "FAULT_CODE_NONE";             // 0
 static const char* const ERR_VESC_FAULT_CODE_UNDER_VOLTAGE    = "FAULT_CODE_UNDER_VOLTAGE";    // 2
-static const char* const ERR_VESC_FAULT_CODE_DRV            = "FAULT_CODE_DRV";            // 3
+static const char* const ERR_VESC_FAULT_CODE_DRV              = "FAULT_CODE_DRV";              // 3
 static const char* const ERR_VESC_FAULT_CODE_ABS_OVER_CURRENT = "FAULT_CODE_ABS_OVER_CURRENT"; // 4
 static const char* const ERR_VESC_FAULT_CODE_OVER_TEMP_FET    = "FAULT_CODE_OVER_TEMP_FET";    // 5
 

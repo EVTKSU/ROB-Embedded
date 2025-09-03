@@ -1,7 +1,9 @@
 #include "EVT_StateMachine.h"
 #include "EVT_VescDriver.h"
-// Define the global state variable.
-STATE CurrentState = NONE;
+
+
+STATE CurrentState = STATE::NONE;
+
 
 STATE GetState() {
     return CurrentState;
@@ -10,7 +12,7 @@ STATE GetState() {
 
 void SetState(STATE newState) {
     CurrentState = newState;
-    if (newState == ERR) {
+    if (newState == STATE::ERR) {
         Serial.println("=========================== ERROR OCCURRED ===========================");
         Serial.println("=========================== ERROR OCCURRED ===========================");
         Serial.println("=========================== ERROR OCCURRED ===========================");
@@ -22,8 +24,9 @@ void SetState(STATE newState) {
     }
 }
 
+
 void SetErrorState(const char* location, const char* reason) {
-    CurrentState = ERR;
+    CurrentState = STATE::ERR;
     Serial.println("=========================== ERROR OCCURRED ===========================");
     Serial.println("=========================== ERROR OCCURRED ===========================");
     Serial.println("=========================== ERROR OCCURRED ===========================");
@@ -38,9 +41,11 @@ void SetErrorState(const char* location, const char* reason) {
     Serial.println("=========================== ERROR OCCURRED ===========================");
 }
 
+
 void PrintState(){
     Serial.println(StateToString(CurrentState)); 
 }
+
 
 const char* StateToString(STATE s) {
     if (s >= 0 && s <= ERR) {

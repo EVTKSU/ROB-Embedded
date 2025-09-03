@@ -61,6 +61,7 @@ class SlewRateLimiter {
      */
     void setRate(float rate);
 
+    
     /**
      * @brief Sets the maximum rate of change
      * 
@@ -71,9 +72,9 @@ class SlewRateLimiter {
 
 
     /**
-     * @brief Sets the last value of the rate limiter
+     * @brief Sets the previous value of the rate limiter
      * 
-     * @param val Last value to set
+     * @param val Value to set as the value from the previous iteration
      */
     void setLastValue(float val);
 };

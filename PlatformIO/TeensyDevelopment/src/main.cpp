@@ -1,154 +1,158 @@
 #include <Arduino.h>
-#include "EVT_Ethernet.h"
-#include "EVT_RC.h"
-#include "EVT_VescDriver.h"
-#include "EVT_ODriver.h"
-#include "EVT_AutoMode.h"
+
 #include "EVT_StateMachine.h"
+#include "EVT_VescDriver.h"
+#include "EVT_Ethernet.h"
+#include "EVT_AutoMode.h"
+#include "EVT_ODriver.h"
+#include "EVT_RC.h"
 
-    // NONE,   < No state defined.
-    // INIT,   < Initialization state.
-    // IDLE, < Idle state.  
-    // CALIB,  < Calibration state.
-    // RC,     < Remote Control state.
-    // AUTO,   < Autonomous state.
-    // ERR,     < Error state.
+/** 
+ * Values of the STATE enum:
+ *   NONE  -- No state defined
+ *   INIT  -- Initialization state
+ *   IDLE  -- Idle state
+ *   CALIB -- Calibration state
+ *   RC    -- Remote Control state
+ *   AUTO  -- Autonomous state
+ *   ERR   -- Error state
+**/
 
-  uint16_t auto_switch;
-  uint16_t calibration_switch; 
-  uint16_t reset_switch;
+uint16_t auto_switch;        // Current value of the auto switch as an int
+uint16_t calibration_switch; // Current value of the calibration switch as an int
+uint16_t reset_switch;       // Current value of the reset switch as an int
 
-  int loop_count = 0;
-  int loops_per_telem = 10;
+int loop_count = 0;       // Number of calls to loop
+int loops_per_telem = 10; // Number of loops between telemetry messages
 
+const int ODriveRelayPin = 3;
+const int VSECRelayPin = 4;
+const int ContactorRelayPin = 5; 
+
+
+/**
+ * @brief One time setup to run during Teensy start up
+ */
 void setup() {
-  SetState(NONE);
+  SetState(STATE::NONE); // Set the state to NONE while doing initial setup
+
   Serial.begin(9600);
-  delay(1000); // Wait for Serial Monitor to open
+  while (!Serial) { delay(20); } // Wait for Serial Monitor to open
   
-  // Initialize modules.
-  SetState(INIT);
-  pinMode(3, OUTPUT);
-  pinMode(4, OUTPUT);
-  pinMode(5, OUTPUT);
+  // Initialize modules
+  SetState(STATE::INIT);     // Set state to INIT after Serial finishes initializing
+  pinMode(ODriveRelayPin, OUTPUT);    // Set the ODrive relay pin to ouput
+  pinMode(VSECRelayPin, OUTPUT);      // Set the VESC relay pin to output
+  pinMode(ContactorRelayPin, OUTPUT); // Set the Contactor relay pin to output
+
   Serial.println("Powering up contactors...");
-  digitalWrite(3, HIGH);
-  digitalWrite(4, HIGH);
-  digitalWrite(5, HIGH);
+  digitalWrite(ODriveRelayPin, HIGH);    // Turns on the ODrive relay
+  digitalWrite(VSECRelayPin, HIGH);      // Turns on the VESC relay
+  digitalWrite(ContactorRelayPin, HIGH); // Turns on the Contactor relay
   delay(1000);
   
   Serial.println("Initializing modules...");
-  setupTelemetryUDP();
-  setupSbus();
-  setupVesc();
-  setupOdrv();
-  SetState(IDLE);
+  setupTelemetryUDP();   // Set up communication between Teensy and Panda
+  setupSbus();           // Set up communication between RC Transmitter and Teensy
+  setupVesc();           // Set up communication between Teensy and VESCs
+  setupOdrv();           // Set up communication between Teensy and ODrive
+
+  SetState(STATE::IDLE); // Set the car into IDLE before the first call to loop
 }
 
+
+/**
+ * @brief Main code loop 
+ */
 void loop() {
-
   loop_count++;
-  updateSbusData(); // reads the RC reciever to get sbus data
-  sendTelemetry();// sends telemetry data over UDP to panda 
-  // add switches to corresponding RC channels here
+  updateSbusData(); // Reads the RC reciever to get SBUS data
+  sendTelemetry();  // Sends telemetry data over UDP to Panda 
+
+  // Update the values of the switches from the SBUS channel data 
   auto_switch = channels[6];
-  calibration_switch = channels[5]; // just for calibration out of idle on starup and starts RC
-  reset_switch = channels[4]; // runs odrive calibration and clears errors from err state
+  calibration_switch = channels[5]; // Used for calibration out of IDLE, on start-up, and starts RC
+  reset_switch = channels[4];       // Runs ODrive calibration and clears errors from ERR
 
-  // old main loop
-  // If RC data is available and channel 6 exceeds the threshold, run autonomous mode.
-
-  // if (channels[6] > 1000) {
-  //   updateAutonomousMode();
-  // } else {
-  //   updateVescControl();
-  //   updateOdrvControl();
-  // }
-
-  switch (GetState())
-  {
-    case RC:
-
+  switch (GetState()) {
+    case (STATE::RC):
       updateSbusData();
 
-      if (auto_switch > 1000) {
-
-        SetState(AUTO);
-      } else {
-
+      if (auto_switch > 1000) { // Goes into AUTO state if the auto switch is pulled
+        SetState(STATE::AUTO);
+      } else { // Updates the control values if the auto switch isn't pulled
         updateVescControl();
         updateOdrvControl();
         loops_per_telem = 10;
-        
       }
+
       break;
-
-    case AUTO:
-      if (auto_switch < 1000) {
-        SetState(IDLE);
-      } else {
-
+    case (STATE::AUTO):
+      if (auto_switch < 1000) { // Goes into IDLE state if auto switch is released
+        SetState(STATE::IDLE);
+      } else { // Continues in AUTO state as long as the switch is kept held
         updateAutonomousMode();
         loops_per_telem = 1;
       }
+
       break;
+    case (STATE::ERR):
+      digitalWrite(ODriveRelayPin, LOW);    // Turn off ODrive relay
+      digitalWrite(VSECRelayPin, LOW);      // Turn off VESC relay
+      digitalWrite(ContactorRelayPin, LOW); // Turn off Contactor relay
 
-    case ERR:
-        digitalWrite(3, LOW); // Turn off relay 1 (odrive)
-        digitalWrite(4, LOW); // Turn off relay 2 (vesc)
-        digitalWrite(5, LOW); // Turn off relay 3 (contactor)
-      // check for reset
+      // Check for reset
       if (reset_switch > 1000){
+        digitalWrite(ODriveRelayPin, HIGH);    // Turn on ODrive relay
+        digitalWrite(VSECRelayPin, HIGH);      // Turn on VESC relay
+        digitalWrite(ContactorRelayPin, HIGH); // Turn on Contactor relay
 
-        digitalWrite(3, HIGH); // Turn on relay 1 (odrive)
-        digitalWrite(4, HIGH); // Turn on relay 2 (vesc)
-        digitalWrite(5, HIGH); // Turn on relay 3 (contactor)
         Serial.println("Attempting to clear errors...");
-        if (auto_switch > 1000) {
+        if (auto_switch > 1000) { // Doesn't clear errors if the auto switch is held 
           Serial.println("TURN OFF AUTO SWITCH BEFORE ATTEMPTING TO CLEAR ERRORS");
-        }else{
+        } else { // Allows errors to be cleared when auto switch is released
           Serial.println();
-          Serial.println("yay! Errors cleared :D");
-          SetState(IDLE);
-          odrive.setState(AXIS_STATE_UNDEFINED);
+          Serial.println("Yay! Errors cleared :D");
+
+          SetState(STATE::IDLE); // Goes into IDLE state
+          odrive.setState(ODriveAxisState::AXIS_STATE_UNDEFINED); // Sets the ODrive to undefined state 
         }
       }
+      
       break;
-    
-    case IDLE:
-        updateSbusData();
-        loops_per_telem = 30;
-      // Check if the system is idle and not in error state. if idle, it waits for commands.
-      if (calibration_switch > 400 && auto_switch < 1000) {
+    case (STATE::IDLE):
+      // Updates the SBUS data
+      updateSbusData();
+      loops_per_telem = 30;
 
-        SetState(RC);
+      // Check if the system is in IDLE and not in ERR. If in IDLE, wait for commands
+      if (calibration_switch > 400 && auto_switch < 1000) {
+        SetState(STATE::RC); // Goes into RC if calibrated and not in AUTO
       } else {
         updateSbusData();
         
         if (auto_switch > 1000) {
-        Serial.println("[Auto Switch is on ya dingus]");
+          Serial.println("[Auto Switch is on ya dingus]");
         }
         
         delay(1000); // Add a delay to avoid flooding the serial output
       }
-      break;
 
+      break;
     default:
-        Serial.println("Warning: Unknown state encountered. Defaulting to IDLE.");
-        SetState(IDLE);
-        PrintState();
+      // Default into IDLE if an unknown state is received
+      Serial.println("Warning: Unknown state encountered. Defaulting to IDLE.");
+      SetState(STATE::IDLE);
+      PrintState();
+
       break;
   }
 
+  // Update SBUS data to receive any 
   updateSbusData();
 
-  // if reset is ever on it puts us in idle
+  // Go into IDLE if the reset switch is pulled
   if (reset_switch > 1000 && auto_switch < 1000){
-    SetState(IDLE);
+    SetState(STATE::IDLE);
   }
-
-  // if (loops_per_telem % loop_count == 0){
-  //   sendTelemetry();
-  // }
-
 }

@@ -1,30 +1,49 @@
 #include "EVT_ODriver.h"
-#include "EVT_RC.h"          // for channels[]
+#include "EVT_RC.h" // for channels[]
 
 #include <EVT_SlewRateLimiter.hpp>
 
 HardwareSerial &odrive_serial = Serial6;
-ODriveUART    odrive(odrive_serial);
+ODriveUART odrive(odrive_serial);
 
-float target;                     // creating steering value to command ODrive
-float absCenterPos    = 0.00f;     // ← NEW: manual “zero” reference
+float target;
+float absCenterPos = 0.00f;
 
 // ——— Constants ———
+
 const float VEL_LIMIT    = 24.0f;    
 const float ACCEL_LIMIT  = 10.0f;    
 const float Two_pi       = 2.0f * 3.14159265358979323846f;
-static const float MAX_STEERING_TURNS    = 2.75;  
+static const float MAX_STEERING_TURNS = 2.75;  
+
+const int neutral    = 1075;
+const int deadband   = 50;
 
 const float rateLimit = VEL_LIMIT;
-SlewRateLimiter limiter = SlewRateLimiter(rateLimit);
+SlewRateLimiter limiter = SlewRateLimiter(rateLimit); // Rate limiter for the steering value
+
 
 // ——— State ———
+
 bool          systemInitialized       = false;
 String        odrvDebug;
-float         SteeringCommandPosition = 0.0f;
-float         lastTargetPosition      = 0.0f;
-bool          errorClearFlag          = false;
-unsigned long lastPrintTime           = 0;
+float         SteeringCommandPosition = 0.0f;  // Current steering position 
+float         lastTargetPosition      = 0.0f;  // Previous steering positon 
+bool          errorClearFlag          = false; // Condition to clear ODrive errors 
+unsigned long lastPrintTime           = 0;     // Last time value of debug messages 
+
+int ch3; // RC Transmitter channel 3
+int ch4; // RC Transmitter channel 4
+
+ODriveFeedback fb;
+static unsigned long ledT;
+unsigned long t0;
+int current_mode; // Current ODrive input mode
+
+float absPos;
+float fractionPos;
+float steeringTurns;
+float fractionNeg;
 
 
 /**
@@ -33,13 +52,13 @@ unsigned long lastPrintTime           = 0;
  * @param absPos Reference position 
  */
 void configureAbsoluteReference(float absPos) {
-    odrive_serial.println("w axis0.pos_vel_mapper.config.offset "       + String(absPos, 4));
+    odrive_serial.println("w axis0.pos_vel_mapper.config.offset " + String(absPos, 4));
     delay(20);
 
     odrive_serial.println("w axis0.pos_vel_mapper.config.offset_valid true");
     delay(20);
     
-    odrive_serial.println("w axis0.pos_vel_mapper.config.approx_init_pos "       + String(absPos, 4));
+    odrive_serial.println("w axis0.pos_vel_mapper.config.approx_init_pos " + String(absPos, 4));
     delay(20);
     
     odrive_serial.println("w axis0.pos_vel_mapper.config.approx_init_pos_valid true");
@@ -55,8 +74,10 @@ void configureAbsoluteReference(float absPos) {
  */
 void configureTrapTrajLimits() {
     Serial.println("Setting trap-traj vel/accel limits...");
+
     odrive_serial.println("w axis0.controller.config.vel_limit " + String(VEL_LIMIT));
     delay(20);
+
     odrive_serial.println("w axis0.controller.config.accel_limit " + String(ACCEL_LIMIT));
     delay(20);
 }
@@ -69,8 +90,7 @@ void configureTrapTrajLimits() {
  */
 int getActiveErrors() {
     // Path exactly as exposed in the firmware for active errors :contentReference[oaicite:0]{index=0}
-    long errs = odrive.getParameterAsInt("axis0.active_errors");
-    return (long)errs;
+    return odrive.getParameterAsInt("axis0.active_errors");
 }
 
 
@@ -81,8 +101,7 @@ int getActiveErrors() {
  */
 int getDisarmReason() {
     // Path exactly as exposed in the firmware for disarm reason :contentReference[oaicite:0]{index=0}
-    long reason = odrive.getParameterAsInt("axis0.disarm_reason");
-    return (long)reason;
+    return odrive.getParameterAsInt("axis0.disarm_reason");
 }
 
 
@@ -93,8 +112,7 @@ int getDisarmReason() {
  */
 int getInputMode() {
     // Path exactly as exposed in the firmware for input mode :contentReference[oaicite:0]{index=0}
-    long input_mode = odrive.getParameterAsInt("axis0.controller.config.input_mode");
-    return (long)input_mode;
+    return odrive.getParameterAsInt("axis0.controller.config.input_mode");
 }
 
 
@@ -104,21 +122,21 @@ int getInputMode() {
 void initCalibration() {
     Serial.println("InitCalibration ▶ SBUS ch5");
     
-    odrive.setState(AXIS_STATE_MOTOR_CALIBRATION); // Set to calibration state
+    odrive.setState(ODriveAxisState::AXIS_STATE_MOTOR_CALIBRATION); // Set to calibration state
     delay(4000);
 
     odrive.clearErrors();
-    odrive.setState(AXIS_STATE_ENCODER_OFFSET_CALIBRATION); // Clear any errors and set encoder calibration state
+    odrive.setState(ODriveAxisState::AXIS_STATE_ENCODER_OFFSET_CALIBRATION); // Clear any errors and set encoder calibration state
     delay(4000);
 
     Serial.println("Motor & encoder offset calibration complete."); // Mark the end of calibration
 
-    odrive.setState(AXIS_STATE_IDLE); // Set the ODrive to idle state 
+    odrive.setState(ODriveAxisState::AXIS_STATE_IDLE); // Set the ODrive to idle state 
     Serial.println("Axis set to IDLE. you have 8 seconds to manually home the motor.");
     delay(8000);
     
-    ODriveFeedback fb = odrive.getFeedback();
-    float absPos = fb.pos;
+    fb = odrive.getFeedback();
+    absPos = fb.pos;
 
     Serial.print("Encoder Position: ");
     Serial.println(absPos, 4);
@@ -130,10 +148,10 @@ void initCalibration() {
     Serial.println(absCenterPos, 4);
 
     // Set the ODrive to closed loop control 
-    unsigned long t0 = millis();
-    while (odrive.getState() != AXIS_STATE_CLOSED_LOOP_CONTROL && millis() - t0 < 5000) {
+    t0 = millis();
+    while (odrive.getState() != ODriveAxisState::AXIS_STATE_CLOSED_LOOP_CONTROL && millis() - t0 < 5000) {
         odrive.clearErrors();
-        odrive.setState(AXIS_STATE_CLOSED_LOOP_CONTROL);
+        odrive.setState(ODriveAxisState::AXIS_STATE_CLOSED_LOOP_CONTROL);
         delay(10);
     }
 
@@ -148,7 +166,7 @@ void initCalibration() {
 
     // Store zero reference
     delay(1000);
-    int current_mode = odrive.getParameterAsInt("axis0.controller.config.input_mode");
+    current_mode = getInputMode();
 
     Serial.print("Current input_mode = ");
     Serial.println(current_mode);
@@ -158,32 +176,27 @@ void initCalibration() {
 }
 
 
-/**
- * @brief Start serial communication to the Teensy and ODrive
- */
 void setupOdrv() {
     Serial.begin(115200);
     odrive_serial.begin(115200);
 
     Serial.println("ODrive serial init...");
-    unsigned long t0 = millis();
-    while (odrive.getState() == AXIS_STATE_UNDEFINED && millis() - t0 < 15000) {
+
+    t0 = millis();
+    while (odrive.getState() == ODriveAxisState::AXIS_STATE_UNDEFINED && millis() - t0 < 15000) {
         delay(50);
     }
 
-    Serial.println(odrive.getState() == AXIS_STATE_UNDEFINED
+    Serial.println(odrive.getState() == ODriveAxisState::AXIS_STATE_UNDEFINED
                    ? "ODrive not found, proceeding standalone."
                    : "ODrive detected.");
     Serial.println("Awaiting SBUS ch5 to initCalibration.");
 }
 
 
-/**
- * @brief Control loop used to run the ODrive
- */
 void updateOdrvControl() {
     // LED heartbeat until init
-    static unsigned long ledT = 0;
+    ledT = 0;
     if (!systemInitialized && millis() - ledT > 500) {
         ledT = millis();
         digitalWrite(STATUS_LED_PIN, !digitalRead(STATUS_LED_PIN));
@@ -193,7 +206,7 @@ void updateOdrvControl() {
 
 
     // Clear-errors on SBUS ch4
-    int ch4 = channels[4];
+    ch4 = channels[4];
     if (ch4 > 1500 && !errorClearFlag) {
         errorClearFlag     = true;
         Serial.println("SBUS4 ▶ clearErrors()");
@@ -220,21 +233,19 @@ void updateOdrvControl() {
 
     
     // SBUS ch3 → offsetCmd (deadband + mapping), in radians
-    int ch = constrain(channels[3], 377, 1763);
-    const int neutral    = 1075;
-    const int deadband   = 50;
+    ch3 = constrain(channels[3], 377, 1763);
 
-    if (ch > (neutral + deadband)) {
+    if (ch3 > (neutral + deadband)) {
         // Map [NEUTRAL+DEADBAND … SBUS_MAX] → [0 … +MAX_STEERING_TURNS]
-        float fractionPos = float(ch - (neutral + deadband))
+        fractionPos = float(ch3 - (neutral + deadband))
                           / float(1811 - (neutral + deadband));
-        float steeringTurns = fractionPos * MAX_STEERING_TURNS;
+        steeringTurns = fractionPos * MAX_STEERING_TURNS;
         target = absCenterPos + steeringTurns;
-    } else if (ch < (neutral - deadband)) {
+    } else if (ch3 < (neutral - deadband)) {
         // Map [NEUTRAL‑DEADBAND … SBUS_MIN] → [0 … -MAX_STEERING_TURNS]
-        float fractionNeg = float((neutral - deadband) - ch)
+        fractionNeg = float((neutral - deadband) - ch3)
                           / float((neutral - deadband) - 350);
-        float steeringTurns = fractionNeg * MAX_STEERING_TURNS;
+        steeringTurns = fractionNeg * MAX_STEERING_TURNS;
         target = absCenterPos - steeringTurns;
     } else {
         // Within deadband: hold exactly at absCenterPos
@@ -244,37 +255,9 @@ void updateOdrvControl() {
 
     // Send position command (in turns) with velocity limit
     odrive.setPosition(limiter.calculate(target)); // 0.0f for no torque feedforward
-
-    // long faults = getActiveErrors();
-    // long reason = getDisarmReason();
-    // long mode = getInputMode();
-
-    // // Print telemetry every 100 ms
-    // if (millis() - lastPrintTime > 100) {
-    //     ODriveFeedback fb = odrive.getFeedback();
-    //     Serial.print("Pos(turns): ");
-    //     Serial.print(fb.pos, 6);
-
-    //     Serial.print("Target()):");   Serial.print(target, 4);
-    //     Serial.print("  Pos(turns):"); Serial.print(fb.pos, 4);
-    //     Serial.print("  CH3:");        Serial.println(ch);
-
-    //     Serial.print("Vel(rad/s):");  Serial.print(fb.vel, 4);
-
-    //     // Serial.printf("Active errors: 0x%lX\n", faults);
-    //     // Serial.printf("Disarm reason: 0x%lX\n", reason);
-    //     // Serial.printf("Current input_mode = %lx\n", mode);
-
-    //     lastPrintTime = millis();
-    // }
 }
 
 
-/**
- * @brief Gets the current target 
- * 
- * @return The current target for the ODrive 
- */
 float getTarget() {
     return target;
 }

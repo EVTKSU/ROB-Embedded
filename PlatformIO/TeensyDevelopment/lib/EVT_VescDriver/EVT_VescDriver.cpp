@@ -1,3 +1,4 @@
+#include <EVT_SlewRateLimiter.hpp>
 #include "EVT_VescDriver.h"
 #include "EVT_RC.h"
 
@@ -6,10 +7,35 @@ VescUart vesc2;
 String vescDebug = "";
 String vesc1ErrorString;
 
+const int neutral      = 990;
+const int deadband     = 20;
+const float maxRPM     = 7500.0f;
+const int neutralBrake = 1030;
+const int maxBrake     = 330;
 
-float brakeCommand = 0.0;
+const float forwardRange = (1700.0f - (neutral + deadband));
+const float reverseRange = ((neutral - deadband) - 350.0f);
+float revProp;
 
-bool brakingActive = (brakeCommand > 0.5f); // small threshold to avoid chatter
+const float brakeRange = (float)(neutralBrake - maxBrake);
+float brakeProp;
+
+int ch_vesc;  // VESC RC transmitter channel value
+int ch_brake; // Brake RC transmitter channel value
+
+float maxChangeRPM = 500.0f; // Max RPM change per second
+SlewRateLimiter rpmLimiter(maxChangeRPM);
+
+bool inDeadband;
+
+float rpmCommand; // Current RPM command
+float rpmSetting; // Current RPM setting
+
+float brakeCommand = 0.0; // Brake current setting in amps
+bool brakingActive = (brakeCommand > 0.5f); // Small threshold to avoid noise
+
+int mappedThrottle; // Mapped value of throttle percentage
+
 
 void setupVesc() {
     Serial1.begin(115200);
@@ -19,125 +45,86 @@ void setupVesc() {
     vesc2.setSerialPort(&Serial5);
 }
 
+
 void updateVescControl() {
     // Read and clamp the raw SBUS channel value
-    int ch_vesc = constrain(channels[1], 350, 1700);
-    int ch_brake = constrain(channels[2], 330, 1700);
+    ch_vesc = constrain(channels[1], 350, 1700);
+    ch_brake = constrain(channels[2], 330, 1700);
 
-    
-    const int neutral    = 990;
-    const int deadband   = 20;
-    const float maxRPM   = 7500.0f;
-    const int neutral_brake = 1030;
-    const int brake_max = 330;
-
-
-
-    float rpmCommand = 0.0f;
-
-    // Forward mapping
-    if (ch_vesc > neutral + deadband) {
-        float forwardRange = (1700.0f - (neutral + deadband));
+    // Throttle Mapping
+    if (ch_vesc > neutral + deadband) { // Forward mapping
         rpmCommand = ((ch_vesc - (neutral + deadband)) / forwardRange) * maxRPM;
-    }
-    // Reverse mapping
-    else if (ch_vesc < neutral - deadband) {
-        float reverseRange = ((neutral - deadband) - 350.0f);
-        float revProp = ((neutral - deadband) - ch_vesc) / reverseRange;
+    } else if (ch_vesc < neutral - deadband) { // Reverse mapping
+        revProp = ((neutral - deadband) - ch_vesc) / reverseRange;
         rpmCommand = -revProp * maxRPM;
-    }
-    // Within deadband → zero
-    else {
+    } else { // Within deadband, set RPM to zero
         rpmCommand = 0.0f;
     }
 
 
+    // Brake Mapping
+    if (ch_brake >= neutralBrake - maxBrake){
+        brakeCommand = 0;
+        Serial.println("No Brake!");
+    } else {
+        brakeProp  = (float)((neutralBrake - ch_brake) / brakeRange); // 0..1
+        brakeCommand = brakeProp * 7.0f; // How many amps we want the brake current to be  
 
-    // // brake map
+        vesc1.setBrakeCurrent(brakeCommand);
+        vesc2.setBrakeCurrent(brakeCommand);
 
-    if (ch_brake >= neutral_brake - brake_max){
-    
-       brakeCommand = 0;
-        Serial.println("no brake!");
-    
-    }
-    
-    else{
-
-    float brakeRange = float(neutral_brake - brake_max);     // e.g., 1030 - 330 = 700
-    float brakeProp  = float(neutral_brake - ch_brake) / brakeRange; // 0..1
-    brakeCommand = brakeProp * 7.0f;          // how many amps we want the brake current to be              
-    vesc1.setBrakeCurrent(brakeCommand);
-    vesc2.setBrakeCurrent(brakeCommand);
-       Serial.print("brake current");
-    Serial.print(brakeCommand);
+        Serial.print("Brake Current: ");
+        Serial.print(brakeCommand);
     }
 
-    // --- Approach A: Slew‐rate limiting ---
-    static float lastRpm = 0.0f;
-    const float maxDelta = 500.0f;  // max RPM change per loop
-    float delta = rpmCommand - lastRpm;
-    if (delta >  maxDelta) rpmCommand = lastRpm + maxDelta;
-    if (delta < -maxDelta) rpmCommand = lastRpm - maxDelta;
-    lastRpm = rpmCommand;
 
-    /* 
-    // --- Approach B: Exponential smoothing (alternative) ---
-    // static float lastRpm = 0.0f;
-    // const float alpha = 0.2f;  // between 0 (smooth) and 1 (responsive)
-    // rpmCommand = alpha * rpmCommand + (1 - alpha) * lastRpm;
-    // lastRpm    = rpmCommand;
-    */
+    // --- Slew‐rate limiting --- 
+    rpmSetting = rpmLimiter.calculate(rpmCommand);
 
- // --- NEW: Coast in neutral, speed mode otherwise ---
-bool inDeadband = (ch_vesc >= neutral - deadband) && (ch_vesc <= neutral + deadband);
+    // --- Coast in neutral, speed mode otherwise ---
+    inDeadband = (ch_vesc >= neutral - deadband) && (ch_vesc <= neutral + deadband);
 
 
+    // Prevent RPM commands this loop if braking is active
+    brakingActive = (brakeCommand > 0.5f);
+    if (brakingActive) {
+        return; // Brake was already sent above. Return to avoid sending RPM in the same loop
+    }
 
-    // --- NEW: Braking gate (prevents RPM commands this loop if braking is active)
-bool brakingActive = (brakeCommand > 0.5f); // small threshold avoids chatter around zero
-if (brakingActive) {
-    // Brake was already sent above; just avoid sending RPM in the same loop
-    return;
+
+    if (inDeadband) {
+        // Switch to current mode with 0A to avoid auto-braking in speed mode
+        vesc1.setBrakeCurrent(0.0f);
+        vesc2.setBrakeCurrent(0.0f);
+
+        vesc1.setCurrent(0.0f); // If your wrapper lacks setCurrent(), use setDuty(0.0f) instead.
+        vesc2.setCurrent(0.0f); // (or: vesc1.setDuty(0.0f); vesc2.setDuty(0.0f);)
+    } else {
+        vesc1.setRPM(rpmSetting);
+        vesc2.setRPM(rpmSetting);
+
+        Serial.print("Brake Current: ");
+        Serial.print(brakeCommand);
+        Serial.println();
+    }
 }
-// brake didnt work because when we called the brake it kept running the loop and set rpm right after calling the brake.
-//fixed! 
 
 
-if (inDeadband) {
-    // Switch to current mode with 0 A to avoid auto-braking in speed mode
-    vesc1.setBrakeCurrent(0.0f);
-    vesc2.setBrakeCurrent(0.0f);
-    vesc1.setCurrent(0.0f);     // If your wrapper lacks setCurrent(), use setDuty(0.0f) instead.
-    vesc2.setCurrent(0.0f);     // (or: vesc1.setDuty(0.0f); vesc2.setDuty(0.0f);)
-} else {
-    
-    vesc1.setRPM(rpmCommand);
-    vesc2.setRPM(rpmCommand);
-    Serial.print("brake current");
-    Serial.print(brakeCommand);
+void updateVescControl(float throttlePercent) {
+    // Map throttle_percent to [350, 1700]
+    mappedThrottle = (int)(map(throttlePercent, -100, 100, 350, 1700));
+
     Serial.println();
+    Serial.print("Mapped Throttle: ");
+    Serial.print(mappedThrottle);
 
-}
-}
-
-void updateVescControl(float throttle_percent) {
-
-    // mappint -100 -> +100 to 350 -> 1700
-    int mapped_throttle = int(throttle_percent * 75);
-    Serial.println();
-    Serial.print("mapped throttle: ");
-    Serial.print(mapped_throttle);
-    Serial.print("brake current");
+    Serial.print("Brake Current: ");
     Serial.print(brakeCommand);
     Serial.println();
 
     // Send the RPM command to the VESC
-    vesc1.setRPM(mapped_throttle);
-    vesc2.setRPM(mapped_throttle);
-
-    
-    
+    vesc1.setRPM(mappedThrottle);
+    vesc2.setRPM(mappedThrottle);
 }
 
 

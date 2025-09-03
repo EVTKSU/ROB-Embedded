@@ -1,24 +1,27 @@
 #include <SPI.h>
 #include <sstream>
+
 #include "EVT_VescDriver.h"
 #include "EVT_ODriver.h"
 #include "EVT_Ethernet.h"
 
 // Global variables for UDP control data
-float throttle = 0.0;
-float steering = 0.0;
-bool emergency = false;
+float throttle = 0.0;    // Throttle value 
+float steering = 0.0;    // Steering angle
+bool emergency = false;  // Condition for emergency state
 
-// Function to parse UDP data and update control variables
-// Expected format: "throttle,steering,emergency"
+char udpCopy[128];       // Modifiable UDP buffer
+char* token;             // UDP string token 
+int index;               // Current index 
+std::string rawCommands; // Raw UDP commands from the Panda
+
+
 void setControls(const std::string &udpData) {
-    // Copy string to modifiable buffer
-    char udpCopy[128];
     strncpy(udpCopy, udpData.c_str(), sizeof(udpCopy) - 1);
     udpCopy[sizeof(udpCopy) - 1] = '\0';  // Ensure null termination
 
-    char* token = strtok(udpCopy, ",");
-    int index = 0;
+    token = strtok(udpCopy, ",");
+    index = 0;
 
     while (token != nullptr) {
         switch (index) {
@@ -37,11 +40,11 @@ void setControls(const std::string &udpData) {
         token = strtok(nullptr, ",");
     }
 
-    if (index < 3) {
+
+    if (index < 3) { // Prints a message to the console if the packet has less than 3 fields
         Serial.print("Malformed control packet (expected 3 fields): ");
         Serial.println(udpData.c_str());
     }
-
 }
 
 
@@ -49,20 +52,23 @@ void updateAutonomousMode() {
     // Set autonomous mode debug message.
     odrvDebug = "Autonomous mode active.";
     
-    std::string rawCommands = receiveUdp();
+    // Get the UDP commands from the Latte Panda
+    rawCommands = receiveUdp();
 
-        Serial.print(" | Throttle: ");
-        Serial.print(throttle);
-        Serial.print(" Steering: ");
-        Serial.print(steering);
-        Serial.print(" | Emergency: ");
-        Serial.println(emergency ? "YES" : "NO");
+    // Print the received values
+    Serial.print(" | Throttle: ");
+    Serial.print(throttle);
+    Serial.print(" Steering: ");
+    Serial.print(steering);
+    Serial.print(" | Emergency: ");
+    Serial.println(emergency ? "YES" : "NO");
 
+    // Update the throttle value and send temeletry over UDP
     updateVescControl(throttle);
     sendTelemetry();
 
+    // Only sets the controls if the commands aren't empty
     if (!rawCommands.empty()) {
         setControls(rawCommands);
     }
-
 }

@@ -4,11 +4,21 @@
 #include <Arduino.h>
 #include <SBUS.h>
 
-// Global SBUS channel array.
-extern uint16_t channels[10];
+extern uint16_t channels[10]; // Global SBUS channel array
 
-// SBUS function prototypes.
+
+/**
+ * @brief Begin SBUS communication over Serial2
+ */
 void setupSbus();
+
+
+/**
+ * @brief 
+ * 
+ * @return Condition denoting whether the SBUS was able to update
+ */
 bool updateSbusData();
+
 
 #endif // EVT_RC_H
