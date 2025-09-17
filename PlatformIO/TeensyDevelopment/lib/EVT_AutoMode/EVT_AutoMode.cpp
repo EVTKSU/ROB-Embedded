@@ -12,7 +12,7 @@ bool emergency = false;  // Condition for emergency state
 
 char udpCopy[128];       // Modifiable UDP buffer
 char* token;             // UDP string token 
-int index;               // Current index 
+int currIndex;           // Current index 
 std::string rawCommands; // Raw UDP commands from the Panda
 
 
@@ -21,10 +21,10 @@ void setControls(const std::string &udpData) {
     udpCopy[sizeof(udpCopy) - 1] = '\0';  // Ensure null termination
 
     token = strtok(udpCopy, ",");
-    index = 0;
+    currIndex = 0;
 
     while (token != nullptr) {
-        switch (index) {
+        switch (currIndex) {
             case 0:
                 throttle = atof(token);
                 break;
@@ -36,12 +36,12 @@ void setControls(const std::string &udpData) {
                 break;
         }
 
-        index++;
+        currIndex++;
         token = strtok(nullptr, ",");
     }
 
 
-    if (index < 3) { // Prints a message to the console if the packet has less than 3 fields
+    if (currIndex < 3) { // Prints a message to the console if the packet has less than 3 fields
         Serial.print("Malformed control packet (expected 3 fields): ");
         Serial.println(udpData.c_str());
     }
