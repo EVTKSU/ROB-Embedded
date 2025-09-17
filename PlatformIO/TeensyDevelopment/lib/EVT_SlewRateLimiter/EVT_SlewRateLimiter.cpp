@@ -23,19 +23,15 @@ SlewRateLimiter::SlewRateLimiter(float maxPosChange, float maxNegChange, float i
 
 
 float SlewRateLimiter::calculate(float targetValue) {
-  currentTime = millis();              // Get the current time
-  timeChange = currentTime - lastTime; // Measure the change in time 
-  delta = targetValue - lastValue;
+  currentTime = millis();               // Get the current time
+  timeChange = currentTime - lastTime;  // Measure the change in time
+  
+  lastValue += constrain(               // Constrain the value change
+    targetValue - lastValue,            // Change in value since previous iteration 
+    -maxDecrease * (timeChange / 1000), // Maximum decrease value 
+    maxIncrease * (timeChange / 1000)   // Maximum increase value
+  );
 
-  if (delta > 0) { // Code to run to calculate change if the difference is positive
-    maxDelta = maxIncrease * (timeChange / 1000.0); // Get the maximum positive change per second
-    delta = min(delta, maxDelta);
-  } else if (delta < 0) { // Code to run to calculate change if the difference is negative
-    maxDelta = maxDecrease * (timeChange / 1000.0); // Get the maximum negative change per second
-    delta = max(delta, -maxDelta);
-  }
-
-  lastValue += delta;  // Add the change to the value 
   lastTime = millis(); // Record the time at the end of the current iteration
 
   return lastValue;
