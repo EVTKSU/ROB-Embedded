@@ -5,7 +5,8 @@
 
 /*----------------------------------------------------------------------------------*/
 /** @file   SlewRateLimiter.hpp
- * @brief   Header for SlewRateLimiter class (used to limit variable rate of change)
+ *  @brief  Header for SlewRateLimiter class (used to limit variable rate of change)
+ *  @author Nyx Turbeville
 *//*--------------------------------------------------------------------------------*/
 
 
