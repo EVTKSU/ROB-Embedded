@@ -3,7 +3,7 @@
 #include "EVT_StateMachine.h"
 #include "EVT_VescDriver.h"
 #include "EVT_Ethernet.h"
-#include "EVT_AutoMode.h"
+#include "EVT_AutoMode.hpp"
 #include "EVT_ODriver.h"
 #include "EVT_RC.hpp"
 
@@ -21,7 +21,8 @@
 uint16_t auto_switch;        // Current value of the auto switch as an int
 uint16_t calibration_switch; // Current value of the calibration switch as an int
 uint16_t reset_switch;       // Current value of the reset switch as an int
-EVT_RC RC; 
+EVT_RC rc;
+AutoMode auto_mode; 
 
 int loop_count = 0;       // Number of calls to loop
 int loops_per_telem = 10; // Number of loops between telemetry messages
@@ -54,7 +55,7 @@ void setup() {
   
   Serial.println("Initializing modules...");
   setupTelemetryUDP();   // Set up communication between Teensy and Panda
-  RC.setupSbus();           // Set up communication between RC Transmitter and Teensy
+  rc.setupSbus();           // Set up communication between RC Transmitter and Teensy
   setupVesc();           // Set up communication between Teensy and VESCs
   setupOdrv();           // Set up communication between Teensy and ODrive
 
@@ -67,7 +68,7 @@ void setup() {
  */
 void loop() {
   loop_count++;
-  RC.updateSbusData(); // Reads the RC reciever to get SBUS data
+  rc.updateSbusData(); // Reads the RC reciever to get SBUS data
   sendTelemetry();  // Sends telemetry data over UDP to Panda 
 
   // Update the values of the switches from the SBUS channel data 
@@ -77,7 +78,7 @@ void loop() {
 
   switch (GetState()) {
     case (STATE::RC):
-      RC.updateSbusData();
+      rc.updateSbusData();
 
       if (auto_switch > 1000) { // Goes into AUTO state if the auto switch is pulled
         SetState(STATE::AUTO);
@@ -92,7 +93,7 @@ void loop() {
       if (auto_switch < 1000) { // Goes into IDLE state if auto switch is released
         SetState(STATE::IDLE);
       } else { // Continues in AUTO state as long as the switch is kept held
-        updateAutonomousMode();
+        auto_mode.updateAutonomousMode();
         loops_per_telem = 1;
       }
 
@@ -123,14 +124,14 @@ void loop() {
       break;
     case (STATE::IDLE):
       // Updates the SBUS data
-      updateSbusData();
+      rc.updateSbusData();
       loops_per_telem = 30;
 
       // Check if the system is in IDLE and not in ERR. If in IDLE, wait for commands
       if (calibration_switch > 400 && auto_switch < 1000) {
         SetState(STATE::RC); // Goes into RC if calibrated and not in AUTO
       } else {
-        updateSbusData();
+        rc.updateSbusData();
         
         if (auto_switch > 1000) {
           Serial.println("[Auto Switch is on ya dingus]");
@@ -150,7 +151,7 @@ void loop() {
   }
 
   // Update SBUS data to receive any 
-  RC.updateSbusData();
+  rc.updateSbusData();
 
   // Go into IDLE if the reset switch is pulled
   if (reset_switch > 1000 && auto_switch < 1000){
