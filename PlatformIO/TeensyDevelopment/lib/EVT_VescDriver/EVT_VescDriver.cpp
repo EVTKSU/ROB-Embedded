@@ -1,6 +1,6 @@
 #include <EVT_SlewRateLimiter.hpp>
 #include "EVT_VescDriver.h"
-#include "EVT_RC.h"
+#include "EVT_RC.hpp"
 
 VescUart vesc1;
 VescUart vesc2;

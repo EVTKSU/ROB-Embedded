@@ -5,9 +5,10 @@ SBUS sbus(Serial2); // Create SBUS instance on Serial2
 uint16_t channels[10] = {0};
 
 
+bool EVT_RC::sbusFailSafe = false;
+bool EVT_RC::sbusLostFrame = false;
 EVT_RC::EVT_RC(){
-    static bool sbusFailSafe = false;
-    static bool sbusLostFrame = false;
+    
 }
 
 void EVT_RC::setupSbus() {

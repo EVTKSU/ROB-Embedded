@@ -5,13 +5,14 @@
 #include <cstdlib>
 
 #include "EVT_Ethernet.h"
-#include "EVT_RC.h"
+#include "EVT_RC.hpp"
 #include "EVT_StateMachine.h"
 #include "EVT_VescDriver.h"
 #include "EVT_ODriver.h"
 
 
 // Global object definitions.
+EVT_RC rc;
 EthernetUDP Udp;
 IPAddress ip(192, 168, 0, 177);
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
@@ -94,7 +95,7 @@ void sendTelemetry() {
   vescCurrent = vesc1.data.avgInputCurrent + vesc2.data.avgInputCurrent;
 
   // Update RC data and sample channels
-  updateSbusData();
+  rc.updateSbusData();
   rcSteeringInput = channels[3];
   rcThrottleInput = channels[1];
 

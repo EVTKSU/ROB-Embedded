@@ -13,7 +13,7 @@ private:
     static bool sbusFailSafe;
     static bool sbusLostFrame; 
 public:
-
+    
 
 EVT_RC();
 
