@@ -24,6 +24,10 @@ namespace Constants {
 
     /* --------------------{ Channel Transmitter Constants }------------------- */
 
+    static const long sBusBaudrate = 100'000;     // Baud rate for the Serial monitor that the SBUS is connected to 
+
+    static const int numChannels = 10;            // Number of channels on the SBUS reciever
+
     static const int channelDeadband = 20;        // Value for the controller deadband on the RC joysticks 
     
     static const int channelLow = 0;              // Value for accessing the low bound of an RC channel 
