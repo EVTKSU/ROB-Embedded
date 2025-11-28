@@ -85,7 +85,7 @@ if (emergency == true) {
 void CtrlOdrive() {
     // Map steering (-100 to +100) to ODrive position range (-maxPos to +maxPos)
     if (steering <-0.25f){
-        SteeringPos = (steering / 100.0f) * -2.25f; // map steering -100 to 0 to -maxPos to 0
+        SteeringPos = (steering / 100.0f) * 2.25f; // map steering -100 to 0 to -maxPos to 0
     }
     else if (steering > 0.25f) {
         SteeringPos = (steering / 100.0f) * 2.25f; // map steering 0 to +100 to 0 to +maxPos
