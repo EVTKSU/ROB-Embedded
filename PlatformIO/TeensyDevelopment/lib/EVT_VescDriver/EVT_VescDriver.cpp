@@ -13,10 +13,8 @@ bool brakingActive = (brakeCommand > 0.5f); // small threshold to avoid chatter
 
 void setupVesc() {
     Serial1.begin(115200);
-    vesc1.setSerialPort(&Serial1);
+    vesc1.setSerialPort(&Serial5);
     
-    Serial5.begin(115200);
-    vesc2.setSerialPort(&Serial5);
 }
 
 void updateVescControl() {
@@ -107,9 +105,7 @@ if (brakingActive) {
 if (inDeadband) {
     // Switch to current mode with 0 A to avoid auto-braking in speed mode
     vesc1.setBrakeCurrent(0.0f);
-    vesc2.setBrakeCurrent(0.0f);
     vesc1.setCurrent(0.0f);     // If your wrapper lacks setCurrent(), use setDuty(0.0f) instead.
-    vesc2.setCurrent(0.0f);     // (or: vesc1.setDuty(0.0f); vesc2.setDuty(0.0f);)
 } else {
     
     vesc1.setRPM(rpmCommand);
@@ -134,7 +130,6 @@ void updateVescControl(float throttle_percent) {
 
     // Send the RPM command to the VESC
     vesc1.setRPM(mapped_throttle);
-    vesc2.setRPM(mapped_throttle);
 
     
     

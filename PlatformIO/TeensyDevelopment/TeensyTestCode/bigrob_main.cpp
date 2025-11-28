@@ -71,10 +71,11 @@ void loop() {
     case RC:
     Serial.println("In RC Control Mode");
       updateSbusData();
-    
+
       if (auto_switch > 1000) {
 
         SetState(AUTO);
+        
       } else {
 
         updateVescControl();
