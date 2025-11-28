@@ -25,7 +25,9 @@ void updateVescControl() {
     
     const int neutral    = 990;
     const int deadband   = 20;
-    const float maxRPM   = 7500.0f;
+    const float maxRPM   = 7500.0f; // old vesc rpm value
+    // const float maxRPM   = 14800.0f // new theoretical vesc value, 3700 Mechancial rpm x 4 pole pairs = 14800 Electrical rpm
+    // btw vesc rpm commands are in electrical rpm not mechanical rpm (this comes from VESC documentation)
     const int neutral_brake = 1030;
     const int brake_max = 330;
 
@@ -104,6 +106,7 @@ if (brakingActive) {
 
 if (inDeadband) {
     // Switch to current mode with 0 A to avoid auto-braking in speed mode
+    
     vesc1.setBrakeCurrent(0.0f);
     vesc1.setCurrent(0.0f);     // If your wrapper lacks setCurrent(), use setDuty(0.0f) instead.
 } else {

@@ -7,5 +7,6 @@
 void updateAutonomousMode();
 void setControls(const std::string &udpData);
 void runMappedControls();
-
+void CtrlVesc();
+void CtrlOdrive();
 #endif // EVT_AUTOMODE_H
