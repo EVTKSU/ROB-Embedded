@@ -2,7 +2,6 @@
 #include "EVT_RC.h"
 
 VescUart vesc1;
-VescUart vesc2;
 String vescDebug = "";
 String vesc1ErrorString;
 
@@ -13,7 +12,7 @@ bool brakingActive = (brakeCommand > 0.5f); // small threshold to avoid chatter
 
 void setupVesc() {
     Serial1.begin(115200);
-    vesc1.setSerialPort(&Serial5);
+    vesc1.setSerialPort(&Serial1);
     
 }
 
@@ -59,7 +58,6 @@ void updateVescControl() {
     
        brakeCommand = 0;
         Serial.println("no brake!");
-    
     }
     
     else{
@@ -68,7 +66,6 @@ void updateVescControl() {
     float brakeProp  = float(neutral_brake - ch_brake) / brakeRange; // 0..1
     brakeCommand = brakeProp * 7.0f;          // how many amps we want the brake current to be              
     vesc1.setBrakeCurrent(brakeCommand);
-    vesc2.setBrakeCurrent(brakeCommand);
        Serial.print("brake current");
     Serial.print(brakeCommand);
     }
@@ -112,7 +109,6 @@ if (inDeadband) {
 } else {
     
     vesc1.setRPM(rpmCommand);
-    vesc2.setRPM(rpmCommand);
     Serial.print("brake current");
     Serial.print(brakeCommand);
     Serial.println();

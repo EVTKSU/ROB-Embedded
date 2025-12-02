@@ -62,7 +62,7 @@ void sendTelemetry() {
     // Get VESC telemetry
     float rpm = vesc1.data.rpm;
     float vescVoltage = vesc1.data.inpVoltage;
-    float vescCurrent = vesc1.data.avgInputCurrent + vesc2.data.avgInputCurrent;
+    float vescCurrent = vesc1.data.avgInputCurrent;
 
     // Update RC data and sample channels
     updateSbusData();
