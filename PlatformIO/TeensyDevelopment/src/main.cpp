@@ -17,7 +17,7 @@
   uint16_t auto_switch;
   uint16_t calibration_switch; 
   uint16_t reset_switch;
-
+  bool autonomous = false;
   int loop_count = 0;
   int loops_per_telem = 10;
 
@@ -85,10 +85,16 @@ void loop() {
       break;
 
     case AUTO:
+      if (autonomous == false) {
+        Serial.println("Entering Autonomous Mode");
+        odrive_serial.println("w axis0.trap_traj.config.accel_limit " + String(1300));
+        odrive_serial.println("w axis0.trap_traj.config.decel_limit " + String(1300));
+      }
       if (auto_switch < 1000) {
         Serial.println("auto switch is off in case auto");
         SetState(IDLE);
       } else {
+        autonomous = true;
         Serial.println("I'm Autonomizing it");
         updateAutonomousMode();
         loops_per_telem = 1;
