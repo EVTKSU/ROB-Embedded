@@ -15,7 +15,7 @@ const float ACCEL_LIMIT  = 200.0;
 const float Two_pi       = 2.0f * 3.14159265358979323846f;
 static const float MAX_STEERING_TURNS    = 4.2;  
 
-const float rateLimit = VEL_LIMIT;
+const float rateLimit = 50.0;
 SlewRateLimiter limiter = SlewRateLimiter(rateLimit);
 
 // ——— State ———
@@ -251,7 +251,7 @@ void updateOdrvControl() {
     
 
     // Send position command (in turns) with velocity limit
-    odrive.trapezoidalMove(target);
+    odrive.trapezoidalMove(limiter.calculate(target));
 
     // long faults = getActiveErrors();
     // long reason = getDisarmReason();
