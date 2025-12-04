@@ -10,10 +10,10 @@ float target;                     // creating steering value to command ODrive
 float absCenterPos    = 0.00f;     // ← NEW: manual “zero” reference
 
 // ——— Constants ———
-const float VEL_LIMIT    = 125.0f;    
-const float ACCEL_LIMIT  = 125.0f;    
+const float VEL_LIMIT    = 120.0;    
+const float ACCEL_LIMIT  = 1300.0;    
 const float Two_pi       = 2.0f * 3.14159265358979323846f;
-static const float MAX_STEERING_TURNS    = 2.75;  
+static const float MAX_STEERING_TURNS    = 4.2;  
 
 const float rateLimit = VEL_LIMIT;
 SlewRateLimiter limiter = SlewRateLimiter(rateLimit);
@@ -44,7 +44,6 @@ void configureAbsoluteReference(float absPos) {
     
     odrive_serial.println("w axis0.pos_vel_mapper.config.approx_init_pos_valid true");
     delay(20);
-    
     odrive_serial.println("w axis0.controller.config.absolute_setpoints true");
     delay(20);
 }
@@ -55,18 +54,8 @@ void configureAbsoluteReference(float absPos) {
  */
 void configureTrapTrajLimits() {
     Serial.println("Setting trap-traj vel/accel limits...");
-    odrive_serial.println("w axis0.controller.config.vel_limit " + String(VEL_LIMIT));
-    delay(20);
-    odrive_serial.println("w axis0.controller.config.accel_limit " + String(ACCEL_LIMIT));
-    odrive_serial.println("w axis0.controller.config.vel_gain 0.072");
-odrive_serial.println("w axis0.controller.config.vel_integrator_gain 0");
-    delay(20);
-    odrive_serial.println("w axis0.trap_traj.config.vel_limit " + String(VEL_LIMIT));
-delay(20);
-odrive_serial.println("w axis0.trap_traj.config.accel_limit " + String(ACCEL_LIMIT));
-delay(20);
-}
 
+}
 
 /**
  * @brief Gets the active error codes from the ODrive serial 
@@ -142,11 +131,9 @@ void initCalibration() {
         odrive.setState(AXIS_STATE_CLOSED_LOOP_CONTROL);
         delay(10);
     }
+   // const int axis = 0;  // steering axis
 
     Serial.println("Closed-loop CONTROL engaged.");
-
-    
-    delay(100);
 
     configureTrapTrajLimits(); // sets velocity and acceleration limits
     Serial.println("Trapezoidal trajectory input mode enabled.");
@@ -155,15 +142,27 @@ void initCalibration() {
     delay(1000);
     int current_mode = odrive.getParameterAsInt("axis0.controller.config.input_mode");
 
-    Serial.print("Current input_mode = ");
-    Serial.println(current_mode);
+   
     delay(1000);
 
-    // Serial.println("initCalibration ▶ complete"); // Denote the completion of calibration 
-    // odrive.setParameter("axis0.controller.config.control_mode", 3L);    // POSITION_CONTROL
-    // odrive.setParameter("axis0.controller.config.input_mode",   5L);    // TRAP_TRAJ
-    // odrive.setParameter("axis0.controller.config.vel_limit",    120.0f);
-    // Serial.println("Configured POSITION_CONTROL with TRAP_TRAJ input mode.");
+    Serial.println("initCalibration ▶ complete"); // Denote the completion of calibration 
+ // SETTING ALL PARAMETERS BELOW:   
+odrive_serial.println("w axis0.controller.config.vel_limit 125");
+Serial.println("set vel_limit to 125");
+odrive_serial.println("w axis0.controller.config.pos_gain 100");
+Serial.println("set pos_gain to 100");
+odrive_serial.println("w axis0.controller.config.vel_gain 0.072");
+Serial.println("set vel_gain to 0.072");
+odrive_serial.println("w axis0.controller.config.vel_integrator_gain 0");
+odrive_serial.println("w axis0.controller.config.vel_limit " + String(VEL_LIMIT));
+Serial.println("set vel_limit to " + String(VEL_LIMIT));
+odrive_serial.println("w axis0.trap_traj.config.vel_limit " + String(VEL_LIMIT));
+Serial.println("set trap_traj vel_limit to " + String(VEL_LIMIT));
+odrive_serial.println("w axis0.trap_traj.config.accel_limit " + String(ACCEL_LIMIT));
+odrive_serial.println("w axis0.trap_traj.config.decel_limit " + String(ACCEL_LIMIT));
+
+ Serial.print("Current input_mode = ");
+    Serial.println(current_mode);
 }
 
 
@@ -249,30 +248,18 @@ void updateOdrvControl() {
         // Within deadband: hold exactly at absCenterPos
         target = absCenterPos;
     }
-
+    
 
     // Send position command (in turns) with velocity limit
-    odrive.setPosition(limiter.calculate(target)); // 0.0f for no torque feedforward
+    odrive.trapezoidalMove(target);
 
     // long faults = getActiveErrors();
     // long reason = getDisarmReason();
-    // long mode = getInputMode();
 
-    // // Print telemetry every 100 ms
-    // if (millis() - lastPrintTime > 100) {
-    //     ODriveFeedback fb = odrive.getFeedback();
-    //     Serial.print("Pos(turns): ");
-    //     Serial.print(fb.pos, 6);
 
-    //     Serial.print("Target()):");   Serial.print(target, 4);
-    //     Serial.print("  Pos(turns):"); Serial.print(fb.pos, 4);
-    //     Serial.print("  CH3:");        Serial.println(ch);
 
-    //     Serial.print("Vel(rad/s):");  Serial.print(fb.vel, 4);
 
-    //     // Serial.printf("Active errors: 0x%lX\n", faults);
-    //     // Serial.printf("Disarm reason: 0x%lX\n", reason);
-    //     // Serial.printf("Current input_mode = %lx\n", mode);
+
 
     //     lastPrintTime = millis();
     // }
