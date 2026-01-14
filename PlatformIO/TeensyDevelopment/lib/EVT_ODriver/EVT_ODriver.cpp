@@ -11,7 +11,7 @@ float absCenterPos    = 0.00f;     // ← NEW: manual “zero” reference
 
 // ——— Constants ———
 const float VEL_LIMIT    = 120.0;    
-const float ACCEL_LIMIT  = 200.0;    
+const float ACCEL_LIMIT  = 900.0;    
 const float Two_pi       = 2.0f * 3.14159265358979323846f;
 static const float MAX_STEERING_TURNS    = 4.2;  
 
