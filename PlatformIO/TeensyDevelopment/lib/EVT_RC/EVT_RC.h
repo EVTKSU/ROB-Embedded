@@ -5,7 +5,7 @@
 #include <SBUS.h>
 
 // Global SBUS channel array.
-extern uint16_t channels[10];
+extern uint16_t channels[16];
 
 // SBUS function prototypes.
 void setupSbus();

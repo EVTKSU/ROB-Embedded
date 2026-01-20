@@ -2,7 +2,7 @@
 
 // Create SBUS instance on Serial2.
 SBUS sbus(Serial2);
-uint16_t channels[10] = {0};
+uint16_t channels[16] = {0};
 static bool sbusFailSafe = false;
 static bool sbusLostFrame = false;
 

@@ -28,9 +28,12 @@ void setup() {
   
   // Initialize modules.
   SetState(INIT);
-  pinMode(3, OUTPUT);
-  pinMode(4, OUTPUT);
-  pinMode(5, OUTPUT);
+  pinMode(3, OUTPUT); // odrive relay
+  pinMode(4, OUTPUT); // ebrake really
+  pinMode(5, OUTPUT); // vesc relay
+  pinMode(21, OUTPUT); //red led relay
+  pinMode(22, OUTPUT); //green led relay
+  pinMode(23, OUTPUT); //yellow led relay
   Serial.println("Powering up contactors...");
   digitalWrite(3, HIGH);
   digitalWrite(4, HIGH);
