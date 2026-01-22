@@ -201,10 +201,10 @@ void updateOdrvControl() {
 
 
     // Clear-errors on SBUS ch4
-    int ch4 = channels[4];
+    int ch4 = channels[7];
     if (ch4 > 1500 && !errorClearFlag) {
         errorClearFlag     = true;
-        Serial.println("SBUS4 ▶ clearErrors()");
+        Serial.println("SBUS7 ▶ clearErrors()");
         odrive.clearErrors();
         systemInitialized = false;
     }
@@ -214,14 +214,14 @@ void updateOdrvControl() {
     }
 
 
-    // Trigger calibration/homing on ch5
+ // Trigger calibration/homing on ch5
     if (!systemInitialized) {
-        if (channels[5] > 900) {
+        if (channels[4] > 900) {
             initCalibration();
             systemInitialized = true;
         } else {
             Serial.print("Waiting ch5>900 ▶ ");
-            Serial.println(channels[5]);
+            Serial.println(channels[4]);
             return;
         }
     }
