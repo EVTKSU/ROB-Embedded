@@ -17,7 +17,7 @@ byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 // Internal buffers for UDP packets.
 char autoBuffer[256];
 static char telemetryPacketBuffer[256];
-
+static uint32_t lastUdpRxMs = 0; // Timestamp of last received UDP packet
 
 // Telemetry destination details.
 static IPAddress telemetryDestIP(192, 168, 0, 10);  // Panda IP
@@ -28,7 +28,8 @@ void setupTelemetryUDP() {
   Serial.println("Initializing Telemetry UDP...");
   Ethernet.begin(mac, ip);
   Udp.begin(8888);
-  
+  lastUdpRxMs = millis();
+
   if (Ethernet.hardwareStatus() == EthernetNoHardware) {
     Serial.println("No Ethernet hardware found.");
   } else {
@@ -100,9 +101,14 @@ std::string receiveUdp() {
     int len = Udp.read(autoBuffer, sizeof(autoBuffer) - 1);
     if (len > 0) {
       autoBuffer[len] = '\0';
+      lastUdpRxMs = millis();
     }
     Serial.print("Received packet: ");
     Serial.println(autoBuffer);
+    if (GetState() == AUTO && (millis() - lastUdpRxMs) > 30000UL) {
+  Serial.println("[FAILSAFE] UDP timeout >30s -> ERR");
+  SetState(ERR);
+    }
     return std::string(autoBuffer);
   }
   // Return an empty string if no packet is received.
