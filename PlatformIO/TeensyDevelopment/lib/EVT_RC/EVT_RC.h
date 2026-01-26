@@ -1,8 +1,8 @@
+// EVT_RC.h
 #ifndef EVT_RC_H
 #define EVT_RC_H
 
 #include <Arduino.h>
-#include <SBUS.h>
 
 // Raw SBUS channels (0-based indices: channels[0]..channels[15])
 extern uint16_t channels[16];
@@ -19,5 +19,8 @@ extern bool sbusLostFrame;
 // Public API
 void setupSbus();
 bool updateSbusData();
+
+// Last time a valid SBUS frame was received (for main.cpp watchdog)
+uint32_t getLastRcFrameMs();
 
 #endif // EVT_RC_H
