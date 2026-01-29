@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include "EVT_RC.h"
 #include "EVT_StateMachine.h"
+#include "EVT_AutoMode.h"
 #include "EVT_VescDriver.h"
 #include "EVT_ODriver.h"
 
@@ -93,7 +94,16 @@ void sendTelemetry() {
     Udp.write(telemetryPacketBuffer);
     Udp.endPacket();
 }
+// //void sendAutoTelemetry() {
+//     // This function can be implemented similarly to sendTelemetry(),
+//     // but tailored for autonomous mode specific telemetry data.
+//     // For now, it just calls sendTelemetry().
+//      ODriveFeedback fb = odrive.getFeedback();
+//     float steeringAngle = fb.pos;
 
+//     const char* state = StateToString(GetState());
+
+// //}
 
 std::string receiveUdp() {
   int packetSize = Udp.parsePacket();

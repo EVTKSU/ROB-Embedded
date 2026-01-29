@@ -41,8 +41,8 @@ FanController fan; // Fan module control object
  */
 void setup() {
   SetState(NONE);
-  Serial.begin(9'600);
-  delay(1'000); // Wait for Serial Monitor to open
+  Serial.begin(9600);
+  delay(1000); // Wait for Serial Monitor to open
   
   // Initialize modules.
   SetState(INIT);
@@ -59,16 +59,16 @@ void setup() {
   digitalWrite(IOConstants::odriveRelay, HIGH);
   digitalWrite(IOConstants::eBrakeRelay, HIGH);
   digitalWrite(IOConstants::vescRelay, HIGH);
-  delay(1'000);
+  delay(1000);
 
-  fan.updateSensorData();
-  fan.propTempControl();
+  // fan.updateSensorData();
+  // fan.propTempControl();
   
   Serial.println("Initializing modules...");
   setupSbus();
   setupVesc();
   setupOdrv();
-  //setupTelemetryUDP();
+  setupTelemetryUDP();
   SetState(IDLE);
   Serial.println("i made it here.");
 }
@@ -81,45 +81,39 @@ void loop() {
   Serial.println("Main loop iteration");
   loop_count++;
   updateSbusData(); // reads the RC reciever to get sbus data
-  // sendTelemetry(); // sends telemetry data over UDP to panda 
+  //sendTelemetry(); // sends telemetry data over UDP to panda 
 
   // add switches to corresponding RC channels here
   auto_switch = channels[6];
   calibration_switch = channels[5]; // just for calibration out of idle on starup and starts RC
-  reset_switch = channels[4]; // runs odrive calibration and clears errors from err state
+  reset_switch = channels[7]; // runs odrive calibration and clears errors from err state
 
   // Measure temperature and update fan speed
-  if (millis() - lastTempTime >= (1'000 / tempMeasureFrequency)) {
-    fan.updateSensorData();
-    fan.propTempControl();
+  // if (millis() - lastTempTime >= (1000 / tempMeasureFrequency)) {
+  //   fan.updateSensorData();
+  //   fan.propTempControl();
 
-    if (Serial && printFanOutput) {
-      Serial.printf(
-        "Temp: %0.2fº\t|\tSpeed: %0.2f\n",
-        fan.getTemperature(),
-        fan.getFanPWMValue()
-      );
-    }
-  }
-
-  // old main loop
-  // If RC data is available and channel 6 exceeds the threshold, run autonomous mode.
-
-  // if (channels[6] > 1000) {
-  //   updateAutonomousMode();
-  // } else {
-  //   updateVescControl();
-  //   updateOdrvControl();
+  //   if (Serial && printFanOutput) {
+  //     Serial.printf(
+  //       "Temp: %0.2fº\t|\tSpeed: %0.2f\n",
+  //       fan.getTemperature(),
+  //       fan.getFanPWMValue()
+  //     );
+  //   }
   // }
+
 
   switch (GetState()) {
     case RC:
       Serial.println("In RC Control Mode");
 
       updateSbusData();
-    
-      if (auto_switch > 1'000) {
+      
+      if (auto_switch > 1000) {
         SetState(AUTO);
+      } else if (reset_switch > 1000) {
+        SetState(IDLE);
+        Serial.println("Reset switch activated, returning to IDLE.");
       } else {
         updateVescControl();
         updateOdrvControl();
@@ -130,11 +124,11 @@ void loop() {
     case AUTO:
       if (autonomous == false) {
         Serial.println("Entering Autonomous Mode");
-        odrive_serial.println("w axis0.trap_traj.config.accel_limit " + String(1'300));
-        odrive_serial.println("w axis0.trap_traj.config.decel_limit " + String(1'300));
+        odrive_serial.println("w axis0.trap_traj.config.accel_limit " + String(1300));
+        odrive_serial.println("w axis0.trap_traj.config.decel_limit " + String(1300));
       }
 
-      if (auto_switch < 1'000) {
+      if (auto_switch < 1000) {
         Serial.println("auto switch is off in case auto");
         SetState(IDLE);
       } else {
@@ -159,7 +153,7 @@ void loop() {
         digitalWrite(IOConstants::vescRelay, HIGH); // Turn on relay 3 (contactor)
 
         Serial.println("Attempting to clear errors...");
-        if (auto_switch > 1'000) {
+        if (auto_switch > 1000) {
           Serial.println("TURN OFF AUTO SWITCH BEFORE ATTEMPTING TO CLEAR ERRORS");
         } else {
           Serial.println();
@@ -178,16 +172,16 @@ void loop() {
       loops_per_telem = 30;
 
       // Check if the system is idle and not in error state. if idle, it waits for commands.
-      if (calibration_switch > 400 && auto_switch < 1'000) {
+      if (calibration_switch > 400 && auto_switch < 1000) {
         SetState(RC);
       } else {
         updateSbusData();
         
-        if (auto_switch > 1'000) {
+        if (auto_switch > 1000) {
           Serial.println("[Auto Switch is on ya dingus]");
         }
         
-        delay(1'000); // Add a delay to avoid flooding the serial output
+        delay(1000); // Add a delay to avoid flooding the serial output
       }
 
       break;
@@ -202,9 +196,9 @@ void loop() {
   updateSbusData();
 
   // if reset is ever on it puts us in idle
-  if (reset_switch > 1'000 && auto_switch < 1'000){
-    Serial.println("Reset switch activated. Returning to IDLE state.");
+  if (reset_switch > 1000){
     SetState(IDLE);
+    Serial.println("Reset switch activated, returning to IDLE.");
   }
 
   // if (loops_per_telem % loop_count == 0){
