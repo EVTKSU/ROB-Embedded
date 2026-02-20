@@ -20,6 +20,8 @@ char autoBuffer[256];
 static char telemetryPacketBuffer[256];
 static uint32_t lastUdpRxMs = 0; // Timestamp of last received UDP packet
 
+// Define encoder pin and object
+
 // Telemetry destination details.
 static IPAddress telemetryDestIP(192, 168, 0, 10);  // Panda IP
 static const uint16_t TELEMETRY_DEST_PORT = 5005;  // Matches receiver
@@ -45,12 +47,15 @@ void setupTelemetryUDP() {
   delay(1000);
 }
 
-
+ 
 // Function to send telemetry data over UDP and display on Serial.
 // Function to send telemetry data over UDP and display on Serial.
 void sendTelemetry() {
     // Retrieve current ODrive feedback.
     ODriveFeedback fb = odrive.getFeedback();
+    float wheelPos = 0.0f;
+    float mph = 0.0f;
+    getEncoder(wheelPos, mph);
     float steeringAngle = fb.pos;
     float target = getTarget(); // Get the current target position from ODrive
  
@@ -76,10 +81,11 @@ void sendTelemetry() {
 
     // Format the telemetry string
     snprintf(telemetryPacketBuffer, sizeof(telemetryPacketBuffer),
-             "%d,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
+             "%d,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f", // wheelpos works now? 
              emergency,
              state,
              rpm,
+             wheelPos,
              steeringAngle,
              odrvVoltage,
              vescVoltage,

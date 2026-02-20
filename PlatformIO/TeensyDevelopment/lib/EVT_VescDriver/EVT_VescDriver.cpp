@@ -1,9 +1,18 @@
 #include "EVT_VescDriver.h"
 #include "EVT_RC.h"
-
+#include <AS5X47.h>
 VescUart vesc1;
 String vescDebug = "";
 String vesc1ErrorString;
+
+
+// Define where the CSN Pin in connected. 
+int slaveSelectPin = 9; // NEEDS TO BE CHANGED BASED ON WIRING
+
+// Start connection to the sensor + define wheel sizes
+AS5X47 as5047p(slaveSelectPin);
+float wheeldiameter = 11.0; // wheel diameter in inches only need this so we can calculate circumference 
+float wheelcircumference = wheeldiameter * 3.14159; // wheel circumference in inches 
 
 
 float brakeCommand = 0.0;
@@ -135,3 +144,11 @@ void updateVescControl(float throttle_percent) {
 }
 
 
+void getEncoder(float &wheelPos, float &mph) {
+    // Read the measured angle from the AS5X47 sensor
+    float angle = as5047p.readAngle();
+    mph = (wheelcircumference * vesc1.data.rpm) / 63360.0f; // Convert inches per minute to mph
+    // Calculate wheel position based on steering angle and gear ratio
+    wheelPos = (angle / 3); // our sprocket ratio = 20:60
+
+}

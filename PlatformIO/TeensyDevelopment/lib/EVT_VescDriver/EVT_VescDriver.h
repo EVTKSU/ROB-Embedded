@@ -48,6 +48,6 @@ inline String vescErrorToString(uint8_t code) {
 void setupVesc();
 void updateVescControl();
 void updateVescControl(float throttle_percent);
-
+void getEncoder(float &wheelPos, float &mph);
 
 #endif // EVT_VESCDRIVER_H
