@@ -1,5 +1,5 @@
 #include "EVT_ODriver.h"
-#include "EVT_RC.h"          // for channels[]
+#include <EVT_RC.hpp>          // for channels[]
 
 #include <EVT_SlewRateLimiter.hpp>
 

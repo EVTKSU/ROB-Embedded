@@ -22,8 +22,6 @@ class SlewRateLimiter {
     float timeChange;  // Change in time since previous iteration
 
     float lastValue;   // Value of the number at the previous iteration
-    float maxDelta;    // Maximum change in the value since the previous iteration
-    float delta;       // Change in the value since the previous iteration    
 
   public:
     /**

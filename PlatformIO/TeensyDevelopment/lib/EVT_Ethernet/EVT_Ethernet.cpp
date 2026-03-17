@@ -4,7 +4,7 @@
 #include <sstream>
 #include <vector>
 #include <cstdlib>
-#include "EVT_RC.h"
+#include <EVT_RC.hpp>
 #include "EVT_StateMachine.h"
 #include "EVT_VescDriver.h"
 #include "EVT_ODriver.h"

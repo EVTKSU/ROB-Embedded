@@ -1,95 +1,122 @@
 #include <Arduino.h>
-#include "EVT_Ethernet.h"
-#include "EVT_RC.h"
-#include "EVT_VescDriver.h"
-#include "EVT_ODriver.h"
-#include "EVT_AutoMode.h"
-#include "EVT_StateMachine.h"
 
-    // NONE,   < No state defined.
-    // INIT,   < Initialization state.
-    // IDLE, < Idle state.  
-    // CALIB,  < Calibration state.
-    // RC,     < Remote Control state.
-    // AUTO,   < Autonomous state.
-    // ERR,     < Error state.
+// #include "EVT_StateMachine.h"
+// #include "EVT_VescDriver.h"
+// #include "EVT_Ethernet.h"
+// #include "EVT_AutoMode.h"
+// #include "EVT_ODriver.h"
 
-  uint16_t auto_switch;
-  uint16_t calibration_switch; 
-  uint16_t reset_switch;
-  bool autonomous = false;
-  int loop_count = 0;
-  int loops_per_telem = 10;
+#include <EVT_RC.hpp>
+using namespace Signals;
 
+#include "TransmitterConstants.hpp"
+#include "ConversionConstants.hpp"
+#include "IOConstants.hpp"
+using namespace Constants;
+
+// NONE,   < No state defined.
+// INIT,   < Initialization state.
+// IDLE,   < Idle state.  
+// CALIB,  < Calibration state.
+// RC,     < Remote Control state.
+// AUTO,   < Autonomous state.
+// ERR,    < Error state.
+
+bool autonomous = false;
+int loop_count = 0;
+int loops_per_telem = 10;
+
+ControlRC transmitter;  
+unsigned long currentTime = 0UL;
+
+
+/**
+ * @brief One time setup code
+ */
 void setup() {
+  Serial.begin(IOConstants::serialBaudrate);
+
+  transmitter.setMapping(TransmitterConstants::defaultJoystick, Signals::ControlRC::mapType::JOYSTICK);
+  transmitter.setMapping(TransmitterConstants::defaultSwitch, Signals::ControlRC::mapType::SWITCH);
+  transmitter.setMapping(TransmitterConstants::defaultTriSwitch, Signals::ControlRC::mapType::TRI_SWITCH);
+  transmitter.setMapping(TransmitterConstants::defaultKnob, Signals::ControlRC::mapType::KNOB);
+
+  /*
   SetState(NONE);
-  Serial.begin(9600);
-  delay(1000); // Wait for Serial Monitor to open
   
-  // Initialize modules.
-  SetState(INIT);
-  pinMode(3, OUTPUT);
-  pinMode(4, OUTPUT);
-  pinMode(5, OUTPUT);
+  // Set the car into initialization state 
+  SetState(INIT); 
+
+  // Set the contactor relay pins to output
+  pinMode(IOConstants::oDriveRelay, OUTPUT);
+  pinMode(IOConstants::eBrakeRelay, OUTPUT);
+  pinMode(IOConstants::vescRelay, OUTPUT);
+
+  // Sets the LED dome relay pins to output
+  pinMode(IOConstants::redLedRelay, OUTPUT);
+  pinMode(IOConstants::greenLedRelay, OUTPUT);
+  pinMode(IOConstants::yellowLedRelay, OUTPUT);
+
+  // Power on all the contactors 
   Serial.println("Powering up contactors...");
-  digitalWrite(3, HIGH);
-  digitalWrite(4, HIGH);
-  digitalWrite(5, HIGH);
-  delay(1000);
+  digitalWrite(IOConstants::oDriveRelay, HIGH);
+  digitalWrite(IOConstants::eBrakeRelay, HIGH);
+  digitalWrite(IOConstants::vescRelay, HIGH);
+  delay(1'000);
   
+  // Initialize all the modules 
   Serial.println("Initializing modules...");
   setupSbus();
   setupVesc();
   setupOdrv();
   //setupTelemetryUDP();
+  
+  // Set the car into IDLE state 
   SetState(IDLE);
-  Serial.println("i made it here.");
+  */
+
+  currentTime = millis();
 }
 
+
+/**
+ * @brief Code to run continusously on runtime
+ */
 void loop() {
+  /*
   Serial.println("Main loop iteration");
   loop_count++;
+
   updateSbusData(); // reads the RC reciever to get sbus data
- // sendTelemetry();// sends telemetry data over UDP to panda 
+  // sendTelemetry(); // sends telemetry data over UDP to panda
+
   // add switches to corresponding RC channels here
   auto_switch = channels[6];
   calibration_switch = channels[5]; // just for calibration out of idle on starup and starts RC
   reset_switch = channels[4]; // runs odrive calibration and clears errors from err state
 
-  // old main loop
-  // If RC data is available and channel 6 exceeds the threshold, run autonomous mode.
-
-  // if (channels[6] > 1000) {
-  //   updateAutonomousMode();
-  // } else {
-  //   updateVescControl();
-  //   updateOdrvControl();
-  // }
-
-  switch (GetState())
-  {
+  switch (GetState()) {
     case RC:
-    Serial.println("In RC Control Mode");
+      Serial.println("In RC Control Mode");
       updateSbusData();
     
       if (auto_switch > 1000) {
-
         SetState(AUTO);
       } else {
-
         updateVescControl();
         updateOdrvControl();
-        loops_per_telem = 10;
         
+        loops_per_telem = 10;
       }
-      break;
 
+      break;
     case AUTO:
       if (autonomous == false) {
         Serial.println("Entering Autonomous Mode");
         odrive_serial.println("w axis0.trap_traj.config.accel_limit " + String(1300));
         odrive_serial.println("w axis0.trap_traj.config.decel_limit " + String(1300));
       }
+
       if (auto_switch < 1000) {
         Serial.println("auto switch is off in case auto");
         SetState(IDLE);
@@ -99,12 +126,13 @@ void loop() {
         updateAutonomousMode();
         loops_per_telem = 1;
       }
-      break;
 
+      break;
     case ERR:
-        digitalWrite(3, LOW); // Turn off relay 1 (odrive)
-        digitalWrite(4, LOW); // Turn off relay 2 (vesc)
-        digitalWrite(5, LOW); // Turn off relay 3 (contactor)
+      digitalWrite(3, LOW); // Turn off relay 1 (odrive)
+      digitalWrite(4, LOW); // Turn off relay 2 (vesc)
+      digitalWrite(5, LOW); // Turn off relay 3 (contactor)
+
       // check for reset
       if (reset_switch > 1000){
 
@@ -112,41 +140,46 @@ void loop() {
         digitalWrite(4, HIGH); // Turn on relay 2 (vesc)
         digitalWrite(5, HIGH); // Turn on relay 3 (contactor)
         Serial.println("Attempting to clear errors...");
-        if (auto_switch > 1000) {
+
+        if (auto_switch > 1'000) {
           Serial.println("TURN OFF AUTO SWITCH BEFORE ATTEMPTING TO CLEAR ERRORS");
-        }else{
+        } else {
           Serial.println();
           Serial.println("yay! Errors cleared :D");
           SetState(IDLE);
           odrive.setState(AXIS_STATE_UNDEFINED);
         }
       }
+
       break;
-    
     case IDLE:
-        updateSbusData();
-        Serial.println("System is IDLE. Waiting for commands...");
-        Serial.print(channels[5]);
-        loops_per_telem = 30;
+      updateSbusData();
+
+      Serial.println("System is IDLE. Waiting for commands...");
+      Serial.print(channels[5]);
+
+      loops_per_telem = 30;
+
       // Check if the system is idle and not in error state. if idle, it waits for commands.
       if (calibration_switch > 400 && auto_switch < 1000) {
-
         SetState(RC);
       } else {
         updateSbusData();
         
         if (auto_switch > 1000) {
-        Serial.println("[Auto Switch is on ya dingus]");
+          Serial.println("[Auto Switch is on ya dingus]");
         }
         
         delay(1000); // Add a delay to avoid flooding the serial output
       }
-      break;
 
+      break;
     default:
-        Serial.println("Warning: Unknown state encountered. Defaulting to IDLE.");
-        SetState(IDLE);
-        PrintState();
+      Serial.println("Warning: Unknown state encountered. Defaulting to IDLE.");
+
+      SetState(IDLE);
+      PrintState();
+
       break;
   }
 
@@ -157,9 +190,16 @@ void loop() {
     Serial.println("Reset switch activated. Returning to IDLE state.");
     SetState(IDLE);
   }
+  */
 
-  // if (loops_per_telem % loop_count == 0){
-  //   sendTelemetry();
-  // }
+  if ((currentTime - millis()) >= (ConversionConstants::millisToSec / IOConstants::sBusReceiveFrequency)) {
+    transmitter.update();
 
+    Serial.print("Value: ");
+    Serial.println(transmitter.getChannelValue(Signals::ChannelRC::VRA));
+  }
+
+  currentTime = millis();
+
+  delay(20);
 }

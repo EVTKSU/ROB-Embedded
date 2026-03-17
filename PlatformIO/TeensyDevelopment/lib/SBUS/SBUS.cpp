@@ -95,20 +95,20 @@ bool SBUS::read(uint16_t* channels, bool* failsafe, bool* lostFrame) {
       channels[8] = (uint16_t)((_payload[11] | _payload[12] << 8) & 0x07FF);
       channels[9] =
           (uint16_t)((_payload[12] >> 3 | _payload[13] << 5) & 0x07FF);
-      //channels[10] = (uint16_t)((_payload[13] >> 6 | _payload[14] << 2 |
-      //                           _payload[15] << 10) &
-      //                          0x07FF);
-      //channels[11] =
-      //    (uint16_t)((_payload[15] >> 1 | _payload[16] << 7) & 0x07FF);
-      //channels[12] =
-      //    (uint16_t)((_payload[16] >> 4 | _payload[17] << 4) & 0x07FF);
-      //channels[13] = (uint16_t)((_payload[17] >> 7 | _payload[18] << 1 |
-      //                           _payload[19] << 9) &
-      //                          0x07FF);
-      //channels[14] =
-      //    (uint16_t)((_payload[19] >> 2 | _payload[20] << 6) & 0x07FF);
-      //channels[15] =
-      //    (uint16_t)((_payload[20] >> 5 | _payload[21] << 3) & 0x07FF);
+      channels[10] = (uint16_t)((_payload[13] >> 6 | _payload[14] << 2 |
+                                _payload[15] << 10) &
+                               0x07FF);
+      channels[11] =
+         (uint16_t)((_payload[15] >> 1 | _payload[16] << 7) & 0x07FF);
+      channels[12] =
+         (uint16_t)((_payload[16] >> 4 | _payload[17] << 4) & 0x07FF);
+      channels[13] = (uint16_t)((_payload[17] >> 7 | _payload[18] << 1 |
+                                _payload[19] << 9) &
+                               0x07FF);
+      channels[14] =
+         (uint16_t)((_payload[19] >> 2 | _payload[20] << 6) & 0x07FF);
+      channels[15] =
+         (uint16_t)((_payload[20] >> 5 | _payload[21] << 3) & 0x07FF);
     }
     if (lostFrame) {
       // count lost frames

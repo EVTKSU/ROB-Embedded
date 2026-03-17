@@ -56,7 +56,7 @@ public:
 
 private:
   const uint32_t _sbusBaud = 100000;
-  static const uint8_t _numChannels = 10;
+  static const uint8_t _numChannels = 16;
   const uint8_t _sbusHeader = 0x0F;
   const uint8_t _sbusFooter = 0x00;
   const uint8_t _sbus2Footer = 0x04;
