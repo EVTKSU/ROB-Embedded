@@ -1,17 +1,31 @@
 #ifndef EVT_RC_H
 #define EVT_RC_H
 
+/*-----------------------------------------------------------------------------*/
+/** 
+ * @file   ControlRC.hpp
+ * @brief  Header for ControlRC class
+ * 
+ * The ControlRC class is used to receive data from an RC receiver over SBUS. 
+ * The UART TX from the RC receiver is connected to the SBUS serial port defined 
+ * in the IOConstants struct. In addition, this class also allows for the retrevial 
+ * of specific channels through enums, as well as multiple mapping functions 
+ * for those received channels.
+ * 
+ * @author Nyx Turbeville
+ * @date   March 18, 2026
+*//*---------------------------------------------------------------------------*/
+
 #include <Arduino.h>
 #include <SBUS.h>
 
 #include "TransmitterConstants.hpp"
-using Constants::TransmitterConstants;
-using std::function;
+#include "IOConstants.hpp"
+using namespace Constants;
 
 
 /**
  * @brief Namespace used for signals to between subsystems 
- * 
  */
 namespace Signals {
   /**
@@ -39,18 +53,18 @@ namespace Signals {
 
   /**
    * @brief Class used for receiving and mapping of values from sBus receiver
-   * 
    */
   class ControlRC {
     private:
       uint16_t channelVal[TransmitterConstants::numChannels]; // Values of each RC channel as an array
 
-      uint16_t joystickMap[2];  // Default joystick map
-      uint16_t switchMap[2];    // Default toggle switch map
-      uint16_t triSwitchMap[3]; // Default three state switch map
-      uint16_t knobMap[2];      // Default knob map
+      uint16_t joystickMap[2];   // Default joystick map
+      uint16_t switchMap[2];     // Default toggle switch map
+      uint16_t triSwitchMap[3];  // Default three state switch map
+      uint16_t knobMap[2];       // Default knob map
 
-      SBUS sBus {Serial1}; // sBus instance for reception of values from the RC transmitter 
+      SBUS sBus {IOConstants::sBusSerial}; // sBus instance for reception of values from the RC transmitter 
+
       bool sBusFailsafe = false;
       bool sBusLostFrame = false;
 
@@ -114,19 +128,21 @@ namespace Signals {
 
 
       /**
-       * @brief Gets the value of a channel given a lambda expression to map to non-integer types
+       * @brief Gets the value of a chanel given a lambda expression to map to non-integer types
        * 
-       * @note This method can also be used to apply mapping curves
+       * @note When using this method, you have to specify the expected return type when calling 
        * 
        * @tparam T Type to map to 
+       * @tparam F Lambda template type
        * @param channel Channel to get the value from 
-       * @param mapLambda Lambda expression used to map the value (Must only take in a single uint16_t)
-       * @return T Mapped value from the channel 
+       * @param mapLambda Lambda expression to use to map the value (Must only take in a single uint16_t)
+       * @return T Mapped value from the channel
        */
-      template <class T>
-      inline T getChannelValue(ChannelRC channel, function<T(uint16_t)> mapLambda) {
+      template <class T, typename F>
+      inline T getChannelValue(ChannelRC channel, F&& mapLambda) {
         return mapLambda(channelVal[channel]);
       } 
+
 
       /**
        * @brief Gets all channel values as an array

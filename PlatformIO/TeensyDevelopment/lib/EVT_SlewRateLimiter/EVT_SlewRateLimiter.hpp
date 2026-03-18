@@ -1,12 +1,20 @@
 #ifndef EVT_SLEWRATE_LIMITER
 #define EVT_SLEWRATE_LIMITER
 
-#include <Arduino.h>
-
 /*----------------------------------------------------------------------------------*/
-/** @file   SlewRateLimiter.hpp
- * @brief   Header for SlewRateLimiter class (used to limit variable rate of change)
+/** 
+ * @file   SlewRateLimiter.hpp
+ * @brief  Header for SlewRateLimiter class 
+ * 
+ * The SlewRateLimiter class is used to allow for a simplistic limiting of the 
+ * amount that values can change per second. Most often, this is used as an 
+ * acceleration or velocity limiter for motor control. 
+ * 
+ * @author Nyx Turbeville
+ * @date   March 18, 2026
 *//*--------------------------------------------------------------------------------*/
+ 
+#include <Arduino.h>
 
 
 /**

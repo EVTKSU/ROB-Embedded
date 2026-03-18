@@ -7,7 +7,6 @@
 // #include "EVT_ODriver.h"
 
 #include <EVT_RC.hpp>
-using namespace Signals;
 
 #include "TransmitterConstants.hpp"
 #include "ConversionConstants.hpp"
@@ -26,7 +25,7 @@ bool autonomous = false;
 int loop_count = 0;
 int loops_per_telem = 10;
 
-ControlRC transmitter;  
+Signals::ControlRC transmitter;  
 unsigned long currentTime = 0UL;
 
 
@@ -129,16 +128,16 @@ void loop() {
 
       break;
     case ERR:
-      digitalWrite(3, LOW); // Turn off relay 1 (odrive)
-      digitalWrite(4, LOW); // Turn off relay 2 (vesc)
-      digitalWrite(5, LOW); // Turn off relay 3 (contactor)
+      digitalWrite(IOConstants::oDriveRelay, LOW); // Turn off ODrive relay
+      digitalWrite(IOConstants::eBrakeRelay, LOW); // Turn off E-Brake relay 
+      digitalWrite(IOConstants::vescRelay, LOW);   // Turn off VESC relay 
 
       // check for reset
       if (reset_switch > 1000){
 
-        digitalWrite(3, HIGH); // Turn on relay 1 (odrive)
-        digitalWrite(4, HIGH); // Turn on relay 2 (vesc)
-        digitalWrite(5, HIGH); // Turn on relay 3 (contactor)
+        digitalWrite(IOConstants::oDriveRelay, HIGH); // Turn on ODrive relay
+        digitalWrite(IOConstants::eBrakeRelay, HIGH); // Turn on E-Brake relay 
+        digitalWrite(IOConstants::vescRelay, HIGH);   // Turn on VESC relay 
         Serial.println("Attempting to clear errors...");
 
         if (auto_switch > 1'000) {
@@ -192,7 +191,7 @@ void loop() {
   }
   */
 
-  if ((currentTime - millis()) >= (ConversionConstants::millisToSec / IOConstants::sBusReceiveFrequency)) {
+  if ((currentTime - millis()) >= (ConversionConstants::secToMillis / IOConstants::sBusReceiveFrequency)) {
     transmitter.update();
 
     Serial.print("Value: ");

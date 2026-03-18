@@ -1,10 +1,9 @@
 #include <EVT_RC.hpp>
-#include "TransmitterConstants.hpp"
 
 namespace Signals {
   ControlRC::ControlRC() {
-    Serial1.begin(100'000, SERIAL_8E2); // Begin the sBus serial port
-    sBus.begin();                       // Begin the sBus communication 
+    IOConstants::sBusSerial.begin(100'000, SERIAL_8E2); // Begin the sBus serial port
+    sBus.begin(); // Begin the sBus communication 
 
     delay(500);
   }
@@ -49,13 +48,33 @@ namespace Signals {
         case (ChannelRC::RIGHT_X):
         case (ChannelRC::RIGHT_Y):
         case (ChannelRC::LEFT_Y):
-          return map(channelVal[channel], TransmitterConstants::minRC, TransmitterConstants::maxRC, joystickMap[0], joystickMap[1]);
+          return constrain(
+            map(
+              channelVal[channel], 
+              TransmitterConstants::minRC, 
+              TransmitterConstants::maxRC, 
+              joystickMap[0], 
+              joystickMap[1]
+            ),
+            joystickMap[0],
+            joystickMap[1]
+          );
         case (ChannelRC::SWA):
         case (ChannelRC::SWB):
         case (ChannelRC::SWD):
         case (ChannelRC::SWF):
         case (ChannelRC::SWH):
-          return map(channelVal[channel], TransmitterConstants::minRC, TransmitterConstants::maxRC, switchMap[0], switchMap[1]);
+          return constrain(
+            map(
+              channelVal[channel], 
+              TransmitterConstants::minRC, 
+              TransmitterConstants::maxRC, 
+              switchMap[0], 
+              switchMap[1]
+            ),
+            switchMap[0],
+            switchMap[1]
+          );
         case (ChannelRC::SWC):
         case (ChannelRC::SWE):
         case (ChannelRC::SWG):
@@ -70,13 +89,31 @@ namespace Signals {
         case (ChannelRC::VRB):
         case (ChannelRC::VRC):
         case (ChannelRC::VRD):
-          return map(channelVal[channel], TransmitterConstants::minRC, TransmitterConstants::maxRC, knobMap[0], knobMap[1]);
+          return constrain(
+            map(
+              channelVal[channel], 
+              TransmitterConstants::minRC, 
+              TransmitterConstants::maxRC, 
+              knobMap[0], 
+              knobMap[1]
+            ),
+            knobMap[0],
+            knobMap[1]
+          );
         default:
-          return channelVal[channel];
+          return constrain(
+            channelVal[channel],
+            TransmitterConstants::minRC,
+            TransmitterConstants::maxRC
+          );
       }
     } 
     
-    return channelVal[channel];
+    return constrain(
+      channelVal[channel],
+      TransmitterConstants::minRC,
+      TransmitterConstants::maxRC
+    );
   }
 
 
