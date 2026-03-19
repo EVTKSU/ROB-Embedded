@@ -10,6 +10,7 @@
 
 #include "TransmitterConstants.hpp"
 #include "ConversionConstants.hpp"
+#include "ModuleConstants.hpp"
 #include "IOConstants.hpp"
 using namespace Constants;
 
@@ -25,7 +26,7 @@ bool autonomous = false;
 int loop_count = 0;
 int loops_per_telem = 10;
 
-Signals::ControlRC transmitter;  
+Signals::ControlRC transmitter;
 unsigned long currentTime = 0UL;
 
 
