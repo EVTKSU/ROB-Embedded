@@ -2,7 +2,7 @@
 
 namespace Signals {
   ControlRC::ControlRC() {
-    IOConstants::sBusSerial.begin(100'000, SERIAL_8E2); // Begin the sBus serial port
+    IOConstants::sBusSerial.begin(IOConstants::sBusBaudrate, SERIAL_8E2); // Begin the sBus serial port
     sBus.begin(); // Begin the sBus communication 
 
     delay(500);

@@ -3,10 +3,10 @@
 namespace Modules {
   FanController::FanController() {
     if (!Serial) {             // Start the serial monitor
-      Serial.begin(9'600);           
+      Serial.begin(IOConstants::serialBaudrate);           
     }
 
-    pinMode(fanPin, OUTPUT);   // Set fan output pin
+    pinMode(IOConstants::fanPin, OUTPUT);   // Set fan output pin
   
     if (!tempSensor.begin()) { // Try to initialize the fan module
       Serial.println("Failed to find temp sensor");
@@ -36,7 +36,7 @@ namespace Modules {
 
   void FanController::setFanSpeed(int speed) {
     pwmOutput = speed;
-    analogWrite(fanPin, pwmOutput);
+    analogWrite(IOConstants::fanPin, pwmOutput);
   }
 
 

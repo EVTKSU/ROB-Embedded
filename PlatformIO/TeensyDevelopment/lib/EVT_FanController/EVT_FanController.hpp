@@ -38,8 +38,6 @@ namespace Modules {
    */
   class FanController {
     private:
-      const int fanPin = IOConstants::fanPin;       // Fan controller PWM input
-
       Adafruit_MCP9808 tempSensor;                  // Fan controller I2C temperature sensor 
 
       float tempCelcius;                            // Current temperature in celcius

@@ -14,19 +14,10 @@
 #include "IOConstants.hpp"
 using namespace Constants;
 
-// NONE,   < No state defined.
-// INIT,   < Initialization state.
-// IDLE,   < Idle state.  
-// CALIB,  < Calibration state.
-// RC,     < Remote Control state.
-// AUTO,   < Autonomous state.
-// ERR,    < Error state.
+// bool autonomous = false;
+// int loop_count = 0;
+// int loops_per_telem = 10;
 
-bool autonomous = false;
-int loop_count = 0;
-int loops_per_telem = 10;
-
-Signals::ControlRC transmitter;
 unsigned long currentTime = 0UL;
 
 
@@ -36,33 +27,31 @@ unsigned long currentTime = 0UL;
 void setup() {
   Serial.begin(IOConstants::serialBaudrate);
 
-  transmitter.setMapping(TransmitterConstants::defaultJoystick, Signals::ControlRC::mapType::JOYSTICK);
-  transmitter.setMapping(TransmitterConstants::defaultSwitch, Signals::ControlRC::mapType::SWITCH);
-  transmitter.setMapping(TransmitterConstants::defaultTriSwitch, Signals::ControlRC::mapType::TRI_SWITCH);
-  transmitter.setMapping(TransmitterConstants::defaultKnob, Signals::ControlRC::mapType::KNOB);
+  pinMode(IOConstants::ledBuiltIn, OUTPUT);
+
+  ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultJoystick, Signals::ControlRC::mapType::JOYSTICK);
+  ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultSwitch, Signals::ControlRC::mapType::SWITCH);
+  ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultTriSwitch, Signals::ControlRC::mapType::TRI_SWITCH);
+  ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultKnob, Signals::ControlRC::mapType::KNOB);
+
+  // Set all the relay pins to output
+  pinMode(IOConstants::oDriveRelay, OUTPUT);
+  pinMode(IOConstants::eBrakeRelay, OUTPUT);
+  pinMode(IOConstants::vescRelay, OUTPUT);
+  pinMode(IOConstants::redLedRelay, OUTPUT);
+  pinMode(IOConstants::greenLedRelay, OUTPUT);
+  pinMode(IOConstants::yellowLedRelay, OUTPUT);
+
+  // Turn on the relays to power on contactors 
+  digitalWrite(IOConstants::oDriveRelay, HIGH);
+  digitalWrite(IOConstants::eBrakeRelay, HIGH);
+  digitalWrite(IOConstants::vescRelay, HIGH);
 
   /*
   SetState(NONE);
   
   // Set the car into initialization state 
   SetState(INIT); 
-
-  // Set the contactor relay pins to output
-  pinMode(IOConstants::oDriveRelay, OUTPUT);
-  pinMode(IOConstants::eBrakeRelay, OUTPUT);
-  pinMode(IOConstants::vescRelay, OUTPUT);
-
-  // Sets the LED dome relay pins to output
-  pinMode(IOConstants::redLedRelay, OUTPUT);
-  pinMode(IOConstants::greenLedRelay, OUTPUT);
-  pinMode(IOConstants::yellowLedRelay, OUTPUT);
-
-  // Power on all the contactors 
-  Serial.println("Powering up contactors...");
-  digitalWrite(IOConstants::oDriveRelay, HIGH);
-  digitalWrite(IOConstants::eBrakeRelay, HIGH);
-  digitalWrite(IOConstants::vescRelay, HIGH);
-  delay(1'000);
   
   // Initialize all the modules 
   Serial.println("Initializing modules...");
@@ -93,14 +82,14 @@ void loop() {
   // add switches to corresponding RC channels here
   auto_switch = channels[6];
   calibration_switch = channels[5]; // just for calibration out of idle on starup and starts RC
-  reset_switch = channels[4]; // runs odrive calibration and clears errors from err state
+  reset_switch = channels[4];       // runs odrive calibration and clears errors from err state
 
   switch (GetState()) {
     case RC:
       Serial.println("In RC Control Mode");
       updateSbusData();
     
-      if (auto_switch > 1000) {
+      if (auto_switch > 1'000) {
         SetState(AUTO);
       } else {
         updateVescControl();
@@ -117,7 +106,7 @@ void loop() {
         odrive_serial.println("w axis0.trap_traj.config.decel_limit " + String(1300));
       }
 
-      if (auto_switch < 1000) {
+      if (auto_switch < 1'000) {
         Serial.println("auto switch is off in case auto");
         SetState(IDLE);
       } else {
@@ -134,7 +123,7 @@ void loop() {
       digitalWrite(IOConstants::vescRelay, LOW);   // Turn off VESC relay 
 
       // check for reset
-      if (reset_switch > 1000){
+      if (reset_switch > 1'000){
 
         digitalWrite(IOConstants::oDriveRelay, HIGH); // Turn on ODrive relay
         digitalWrite(IOConstants::eBrakeRelay, HIGH); // Turn on E-Brake relay 
@@ -145,7 +134,7 @@ void loop() {
           Serial.println("TURN OFF AUTO SWITCH BEFORE ATTEMPTING TO CLEAR ERRORS");
         } else {
           Serial.println();
-          Serial.println("yay! Errors cleared :D");
+          Serial.println("yay! Errors cleared :3");
           SetState(IDLE);
           odrive.setState(AXIS_STATE_UNDEFINED);
         }
@@ -161,16 +150,16 @@ void loop() {
       loops_per_telem = 30;
 
       // Check if the system is idle and not in error state. if idle, it waits for commands.
-      if (calibration_switch > 400 && auto_switch < 1000) {
+      if (calibration_switch > 400 && auto_switch < 1'000) {
         SetState(RC);
       } else {
         updateSbusData();
         
-        if (auto_switch > 1000) {
+        if (auto_switch > 1'000) {
           Serial.println("[Auto Switch is on ya dingus]");
         }
         
-        delay(1000); // Add a delay to avoid flooding the serial output
+        delay(1'000); // Add a delay to avoid flooding the serial output
       }
 
       break;
@@ -186,20 +175,17 @@ void loop() {
   updateSbusData();
 
   // if reset is ever on it puts us in idle
-  if (reset_switch > 1000 && auto_switch < 1000){
+  if (reset_switch > 1'000 && auto_switch < 1'000){
     Serial.println("Reset switch activated. Returning to IDLE state.");
     SetState(IDLE);
   }
   */
 
-  if ((currentTime - millis()) >= (ConversionConstants::secToMillis / IOConstants::sBusReceiveFrequency)) {
-    transmitter.update();
-
-    Serial.print("Value: ");
-    Serial.println(transmitter.getChannelValue(Signals::ChannelRC::VRA));
+  
+  // Update the RC controls when in RC
+  if ((currentTime - millis()) >= (ConversionConstants::secToMillis / IOConstants::updateFrequency)) {
+    ModuleConstants::transmitter.update();
   }
 
   currentTime = millis();
-
-  delay(20);
 }
