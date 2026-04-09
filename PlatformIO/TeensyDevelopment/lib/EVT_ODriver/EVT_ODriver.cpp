@@ -1,9 +1,10 @@
 #include "EVT_ODriver.h"
-#include <EVT_RC.hpp>          // for channels[]
+#include "ModuleConstants.hpp"
 
 #include <EVT_SlewRateLimiter.hpp>
+using namespace Constants;
 
-HardwareSerial &odrive_serial = Serial6;
+HardwareSerial &odrive_serial = Constants::IOConstants::oDriveSerial;
 ODriveUART    odrive(odrive_serial);
 
 float target;                     // creating steering value to command ODrive
@@ -14,6 +15,10 @@ const float VEL_LIMIT    = 120.0;
 const float ACCEL_LIMIT  = 900.0;    
 const float Two_pi       = 2.0f * 3.14159265358979323846f;
 static const float MAX_STEERING_TURNS    = 4.2;  
+
+constexpr Signals::ChannelRC kSteeringChannel = Signals::ChannelRC::LEFT_X;
+constexpr Signals::ChannelRC kCalibrationChannel = Signals::ChannelRC::SWA;
+constexpr Signals::ChannelRC kResetChannel = Signals::ChannelRC::SWH;
 
 const float rateLimit = 50.0;
 SlewRateLimiter limiter = SlewRateLimiter(rateLimit);
@@ -97,7 +102,7 @@ int getInputMode() {
  * @brief Runs the ODrive calibration sequence 
  */
 void initCalibration() {
-    Serial.println("InitCalibration ▶ SBUS ch5");
+    Serial.println("InitCalibration ▶ SBUS SWA");
     
     odrive.setState(AXIS_STATE_MOTOR_CALIBRATION); // Set to calibration state
     delay(4000);
@@ -170,8 +175,8 @@ odrive_serial.println("w axis0.trap_traj.config.decel_limit " + String(ACCEL_LIM
  * @brief Start serial communication to the Teensy and ODrive
  */
 void setupOdrv() {
-    Serial.begin(115200);
-    odrive_serial.begin(115200);
+    Serial.begin(Constants::IOConstants::serialBaudrate);
+    odrive_serial.begin(Constants::IOConstants::oDriveBaudrate);
 
     Serial.println("ODrive serial init...");
     unsigned long t0 = millis();
@@ -182,7 +187,7 @@ void setupOdrv() {
     Serial.println(odrive.getState() == AXIS_STATE_UNDEFINED
                    ? "ODrive not found, proceeding standalone."
                    : "ODrive detected.");
-    Serial.println("Awaiting SBUS ch5 to initCalibration.");
+    Serial.println("Awaiting SBUS SWA to initCalibration.");
 }
 
 
@@ -190,6 +195,13 @@ void setupOdrv() {
  * @brief Control loop used to run the ODrive
  */
 void updateOdrvControl() {
+    const uint16_t resetInput =
+        ModuleConstants::transmitter.getChannelValue(kResetChannel, false);
+    const uint16_t calibrationInput =
+        ModuleConstants::transmitter.getChannelValue(kCalibrationChannel, false);
+    const uint16_t steeringInput =
+        ModuleConstants::transmitter.getChannelValue(kSteeringChannel, false);
+
     // LED heartbeat until init
     static unsigned long ledT = 0;
     if (!systemInitialized && millis() - ledT > 500) {
@@ -200,35 +212,34 @@ void updateOdrvControl() {
     }
 
 
-    // Clear-errors on SBUS ch4
-    int ch4 = channels[4];
-    if (ch4 > 1500 && !errorClearFlag) {
+    // Clear errors on the configured reset switch.
+    if (resetInput > 1500 && !errorClearFlag) {
         errorClearFlag     = true;
-        Serial.println("SBUS4 ▶ clearErrors()");
+        Serial.println("SWH ▶ clearErrors()");
         odrive.clearErrors();
         systemInitialized = false;
     }
 
-    if (ch4 < 1500) {
+    if (resetInput < 1500) {
         errorClearFlag = false;
     }
 
 
-    // Trigger calibration/homing on ch5
+    // Trigger calibration/homing on the configured calibration switch.
     if (!systemInitialized) {
-        if (channels[5] > 900) {
+        if (calibrationInput > 900) {
             initCalibration();
             systemInitialized = true;
         } else {
-            Serial.print("Waiting ch5>900 ▶ ");
-            Serial.println(channels[5]);
+            Serial.print("Waiting SWA>900 ▶ ");
+            Serial.println(calibrationInput);
             return;
         }
     }
 
     
-    // SBUS ch3 → offsetCmd (deadband + mapping), in radians
-    int ch = constrain(channels[3], 377, 1763);
+    // Steering input → offsetCmd (deadband + mapping), in turns.
+    int ch = constrain(steeringInput, 377, 1763);
     const int neutral    = 1075;
     const int deadband   = 50;
 

@@ -21,16 +21,6 @@ namespace Constants {
     static Signals::ControlRC transmitter;
     static Signals::EthernetEVT ethernet;
   };
-
-
-  /* ------------------------------------------------------------ //
-   * Note: 
-   *  Since the values inside ModuleConstants are objects,
-   *  they must be defined outside of the struct
-  // ------------------------------------------------------------ */
-  
-  Signals::ControlRC ModuleConstants::transmitter;
-  Signals::EthernetEVT ModuleConstants::ethernet;
 }
 
 #endif // MODULE_CONSTANTS

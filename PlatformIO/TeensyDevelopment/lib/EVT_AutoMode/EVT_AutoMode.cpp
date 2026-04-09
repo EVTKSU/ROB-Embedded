@@ -3,7 +3,9 @@
 #include <sstream>
 #include "EVT_VescDriver.h"
 #include "EVT_ODriver.h"
-#include "EVT_Ethernet.h"
+#include "EVT_Ethernet.hpp"
+#include "ModuleConstants.hpp"
+using namespace Constants;
 
 // IN AUTO MODE, THERE IS NO REVERSE. REVERSE BRAKES IN THIS CASE.
 
@@ -103,7 +105,7 @@ void updateAutonomousMode() {
     // Set autonomous mode debug message.
     odrvDebug = "Autonomous mode active.";
     
-    std::string rawCommands = receiveUdp();
+    std::string rawCommands = ModuleConstants::ethernet.receiveUDP();
 
         Serial.print(" | Throttle(rpm): ");
         Serial.print(throttleRpm);
@@ -117,7 +119,7 @@ void updateAutonomousMode() {
 
     CtrlVesc();
     CtrlOdrive();
-    sendTelemetry();
+    ModuleConstants::ethernet.sendTelemetry();
 
     if (!rawCommands.empty()) {
         setControls(rawCommands);

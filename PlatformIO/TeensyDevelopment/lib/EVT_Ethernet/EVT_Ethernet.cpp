@@ -143,8 +143,6 @@ namespace Signals {
 
 
   void EthernetEVT::sendTelemetry() {
-    ModuleConstants::transmitter.update();
-
     snprintf(
       telemetryBuffer,
       sizeof(telemetryBuffer),

@@ -5,8 +5,9 @@
 #include <ODriveUART.h>
 #include <ODriveArduino.h>
 #include <SoftwareSerial.h>
+#include "IOConstants.hpp"
 
-#define STATUS_LED_PIN 13
+constexpr int STATUS_LED_PIN = Constants::IOConstants::ledBuiltIn;
 
 // Global ODrive flag and debug string.
 
