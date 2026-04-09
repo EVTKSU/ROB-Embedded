@@ -14,10 +14,12 @@
 *//*---------------------------------------------------------------------------*/
 
 #include <EVT_RC.hpp>
+#include <EVT_Ethernet.hpp>
 
 namespace Constants {
   struct ModuleConstants {
     static Signals::ControlRC transmitter;
+    static Signals::EthernetEVT ethernet;
   };
 
 
@@ -28,6 +30,7 @@ namespace Constants {
   // ------------------------------------------------------------ */
   
   Signals::ControlRC ModuleConstants::transmitter;
+  Signals::EthernetEVT ModuleConstants::ethernet;
 }
 
 #endif // MODULE_CONSTANTS

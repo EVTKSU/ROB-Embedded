@@ -1,14 +1,17 @@
-#include "EVT_Ethernet.h"
+#include <EVT_Ethernet.hpp>
+
 #include <SPI.h>
 #include <cstdio>
 #include <sstream>
 #include <vector>
 #include <cstdlib>
-#include <EVT_RC.hpp>
-#include "EVT_StateMachine.h"
-#include "EVT_VescDriver.h"
-#include "EVT_ODriver.h"
 
+#include <EVT_RC.hpp>
+
+#include "ModuleConstants.hpp"
+using namespace Constants;
+
+/*
 // Global object definitions.
 EthernetUDP Udp;
 IPAddress ip(192, 168, 0, 177);
@@ -40,6 +43,7 @@ void setupTelemetryUDP() {
   } else {
     Serial.println("Ethernet cable is not connected (Link OFF).");
   }
+
   delay(1000);
 }
 
@@ -108,5 +112,78 @@ std::string receiveUdp() {
   // Return an empty string if no packet is received.
   return std::string();
 }
+*/
 
 
+namespace Signals {
+  void EthernetEVT::setupUDP() {
+    if (Serial) {
+      Serial.println("Initializing UDP telemetry");
+    }
+
+    Ethernet.begin(mac, teensyIP);
+    udp.begin(8888);
+
+    if (Serial) {
+      if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+        Serial.println("No Ethernet hardware found");
+      } else {
+        Serial.println("Ethernet hardware is present");
+      }
+
+      if (Ethernet.linkStatus() == LinkON) {
+        Serial.println("Ethernet cable is connected");
+      } else {
+        Serial.println("Ethernet cable is not connected");
+      }
+    } 
+
+    delay(1'000);
+  }
+
+
+  void EthernetEVT::sendTelemetry() {
+    ModuleConstants::transmitter.update();
+
+    snprintf(
+      telemetryBuffer,
+      sizeof(telemetryBuffer),
+      "%d,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%d,%d",
+      0,      // Emergency flag
+      "None", // Current State
+      0.0f,   // VESC ERPM target
+      0.0f,   // ODrive position
+      0.0f,   // ODrive voltage
+      0.0f,   // VESC voltage
+      0.0f,   // ODrive current
+      0.0f,   // VESC current 
+      0.0f,   // Target steering position
+      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X),   // RC steering input position
+      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y)    // RC throttle input ERPM
+    );
+
+    // Serial.println(telemetryBuffer);
+
+    udp.beginPacket(pandaIP, telemPort);
+    udp.write(telemetryBuffer);
+    udp.endPacket();
+  }
+
+
+  std::string EthernetEVT::receiveUDP() {
+    if (udp.parsePacket() > 0) {
+      // Add a stop bit to the packet 
+      if (udp.read(autoBuffer, sizeof(autoBuffer - 1)) > 0) {
+        autoBuffer[udp.read(autoBuffer, sizeof(autoBuffer - 1))] = '\0';
+      }
+
+      Serial.print("Received Packet: ");
+      Serial.println(autoBuffer);
+
+      return std::string(autoBuffer);
+    }
+
+    // Return an empty string if no packet is received 
+    return std::string();
+  }
+}
