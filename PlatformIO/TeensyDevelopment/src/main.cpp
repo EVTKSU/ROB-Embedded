@@ -8,6 +8,7 @@ using namespace Constants;
 
 unsigned long currentTime = 0UL;
 unsigned long lastUpdate = 0UL;
+unsigned long lastPrint = 0UL;
 
 
 /**
@@ -44,17 +45,28 @@ void setup() {
  * @brief Code to run continusously on runtime
  */
 void loop() {
+  currentTime = millis();
+
   // Update the RC controls when in RC
   if ((currentTime - lastUpdate) >= (ConversionConstants::secToMillis / IOConstants::updateFrequency)) {
-    ModuleConstants::transmitter.update();
+    if (ModuleConstants::transmitter.update() && (currentTime - lastPrint) >= 50UL) {
+      for (int channel = 0; channel < TransmitterConstants::numChannels; channel++) {
+        Serial.print("CH");
+        Serial.print(channel);
+        Serial.print(": ");
+        Serial.print(ModuleConstants::transmitter.getChannelValue(static_cast<Signals::ChannelRC>(channel), false));
+        if (channel < (TransmitterConstants::numChannels - 1)) {
+          Serial.print("  ");
+        }
+      }
+      Serial.println();
 
-    Serial.println(ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X));
+      lastPrint = currentTime;
+    }
 
     ModuleConstants::ethernet.sendTelemetry();
     ModuleConstants::ethernet.receiveUDP();
 
-    lastUpdate = millis();
+    lastUpdate = currentTime;
   }
-
-  currentTime = millis();
 }

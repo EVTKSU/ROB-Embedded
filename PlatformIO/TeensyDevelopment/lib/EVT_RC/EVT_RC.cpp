@@ -10,7 +10,10 @@ namespace Signals {
 
 
   bool ControlRC::update() {
-    return sBus.read(channelVal, &sBusFailsafe, &sBusLostFrame);
+    uint16_t nextChannelVal[TransmitterConstants::numChannels];
+    if (!sBus.read(nextChannelVal, &sBusFailsafe, &sBusLostFrame) || sBusLostFrame || sBusFailsafe) return false;
+    for (int i = 0; i < TransmitterConstants::numChannels; i++) channelVal[i] = nextChannelVal[i];
+    return true;
   }
 
 
