@@ -10,7 +10,9 @@ namespace Signals {
 
 
   bool ControlRC::update() {
-    return sBus.read(channelVal, &sBusFailsafe, &sBusLostFrame);
+    sBus.read(channelVal, &sBusFailsafe, &sBusLostFrame);
+
+    return !(sBusFailsafe || sBusLostFrame);
   }
 
 
@@ -142,7 +144,7 @@ namespace Signals {
 
 
   bool ControlRC::mapSwitches(uint16_t val) {
-    return val == TransmitterConstants::minRC ? false : true;
+    return val <= TransmitterConstants::midRC ? false : true;
   }
 
 
