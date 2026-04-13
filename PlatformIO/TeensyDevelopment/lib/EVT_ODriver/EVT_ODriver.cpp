@@ -470,10 +470,8 @@ namespace MotorControls {
       Signals::ChannelRC::RIGHT_X,
       [&](float val) -> float {
         if (val >= TransmitterConstants::midRC - 40 && val <= TransmitterConstants::midRC + 40) {
-          Serial.println("In deadband");
           return absCenterPos; // Creates a deadband of a 5% to be a zero position
         } else {
-          Serial.println("Running");
           return constrain(
             map(
               val,
@@ -487,12 +485,6 @@ namespace MotorControls {
           );
         }
       }
-    );
-
-    Serial.printf(
-      "Target: %f\t| RC: %d\n\n",
-      currentTarget,
-      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false)
     );
 
     // Send position command (in turns) with a velocity limit

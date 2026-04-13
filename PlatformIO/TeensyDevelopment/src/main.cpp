@@ -49,6 +49,9 @@ void setup() {
 
   // Power on ODrive contactor
   digitalWrite(IOConstants::oDriveRelay, HIGH);
+  digitalWrite(IOConstants::eBrakeRelay, HIGH);
+  digitalWrite(IOConstants::vescRelay, HIGH);
+
 
   // Perform the initial ODrive setup check
   ModuleConstants::odrive.setup();
