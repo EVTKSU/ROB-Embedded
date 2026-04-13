@@ -2,6 +2,7 @@
 #define EVT_AUTOMODE_H
 
 #include <Arduino.h>
+#include <string>
 
 // Autonomous mode function prototype.
 void updateAutonomousMode();

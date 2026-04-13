@@ -1,5 +1,7 @@
 #include "EVT_VescDriver.h"
-#include <EVT_RC.hpp>
+#include "ModuleConstants.hpp"
+#include "IOConstants.hpp"
+using namespace Constants;
 
 VescUart vesc1;
 String vescDebug = "";
@@ -11,12 +13,14 @@ float brakeCommand = 0.0;
 bool brakingActive = (brakeCommand > 0.5f); // small threshold to avoid chatter
 
 void setupVesc() {
-    Serial1.begin(115200);
-    vesc1.setSerialPort(&Serial1);
+    Constants::IOConstants::vescSerial.begin(Constants::IOConstants::vescBaudrate);
+    vesc1.setSerialPort(&Constants::IOConstants::vescSerial);
     
 }
 
 void updateVescControl() {
+    uint16_t *channels = ModuleConstants::transmitter.getValueArray();
+
     // Read and clamp the raw SBUS channel value
     int ch_vesc = constrain(channels[1], 350, 1700);
     int ch_brake = constrain(channels[2], 330, 1700);
@@ -133,5 +137,3 @@ void updateVescControl(float throttle_percent) {
     
     
 }
-
-

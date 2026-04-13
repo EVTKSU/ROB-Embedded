@@ -34,8 +34,10 @@ namespace Constants {
     static const int fanPin = 29;
 
     static constexpr double updateFrequency = 50.0;
+    static constexpr double ledBlinkFrequency = 1.0;
 
     static const unsigned long serialBaudrate = 9'600UL;
+    static const unsigned long sBusBaudrate = 100'000UL;
     static const unsigned long oDriveBaudrate = 115'200UL;
     static const unsigned long vescBaudrate = 115'200UL;
 

@@ -7,23 +7,20 @@
  * @brief  Header for ModuleConstants struct 
  * 
  * The ModuleConstants struct is used for the definition of various constants 
- * that are used throughout the entire codebase for...
+ * that are used throughout the entire codebase for module drivers
  * 
  * @author Austin Sheppard
  * @date   March 18, 2026
 *//*---------------------------------------------------------------------------*/
 
-#ifndef EVT_RC_H
 #include <EVT_RC.hpp>
-#endif 
-
-#ifndef EVT_ODRIVER_H
 #include <EVT_ODriver.hpp>
-#endif 
+#include <EVT_Ethernet.hpp>
 
 namespace Constants {
   struct ModuleConstants {
     static Signals::ControlRC transmitter;
+    static Signals::EthernetEVT ethernet;
     static MotorControls::ODriver odrive;
   };
 
@@ -35,6 +32,7 @@ namespace Constants {
   // ------------------------------------------------------------ */
 
   Signals::ControlRC ModuleConstants::transmitter;
+  Signals::EthernetEVT ModuleConstants::ethernet;
   MotorControls::ODriver ModuleConstants::odrive;
 }
 
