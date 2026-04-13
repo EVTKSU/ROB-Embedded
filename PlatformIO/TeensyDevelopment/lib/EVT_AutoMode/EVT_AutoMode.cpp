@@ -1,9 +1,12 @@
 
 #include <SPI.h>
 #include <sstream>
+
 #include "EVT_VescDriver.h"
-#include "EVT_ODriver.h"
-#include "EVT_Ethernet.hpp"
+
+#include <EVT_ODriver.hpp>
+#include <EVT_Ethernet.hpp>
+
 #include "ModuleConstants.hpp"
 using namespace Constants;
 
@@ -19,6 +22,7 @@ float SteeringPos = 0.0;
 bool emergency = false;
 bool brakeState = false;
 bool coasting = false;
+
 // Function to parse UDP data and update control variables
 // Expected format: "throttle,steering,emergency"
 void setControls(const std::string &udpData) {
@@ -84,37 +88,32 @@ if (emergency == true) {
 
 
 }
+
 void CtrlOdrive() {
     // Map steering (-100 to +100) to ODrive position range (-maxPos to +maxPos)
     if (steering <-0.25f){
         SteeringPos = (steering / 100.0f) * 2.25f; // map steering -100 to 0 to -maxPos to 0
-    }
-    else if (steering > 0.25f) {
+    } else if (steering > 0.25f) {
         SteeringPos = (steering / 100.0f) * 2.25f; // map steering 0 to +100 to 0 to +maxPos
-    }
-    else {
+    } else {
         SteeringPos = 0.0f; // center position
     }
         
-        odrive.trapezoidalMove(SteeringPos);
-        
+    ModuleConstants::odrive.updateAuto(SteeringPos);
 }
 
 
 void updateAutonomousMode() {
-    // Set autonomous mode debug message.
-    odrvDebug = "Autonomous mode active.";
-    
     std::string rawCommands = ModuleConstants::ethernet.receiveUDP();
 
-        Serial.print(" | Throttle(rpm): ");
-        Serial.print(throttleRpm);
-        Serial.print(" steering(turns): ");
-        Serial.print(SteeringPos);
-        Serial.print(" | Emergency: ");
-        Serial.println(emergency ? "YES" : "NO");
-        Serial.println(brakeState);
-        Serial.println(coasting);
+    Serial.print(" | Throttle(rpm): ");
+    Serial.print(throttleRpm);
+    Serial.print(" steering(turns): ");
+    Serial.print(SteeringPos);
+    Serial.print(" | Emergency: ");
+    Serial.println(emergency ? "YES" : "NO");
+    Serial.println(brakeState);
+    Serial.println(coasting);
 
 
     CtrlVesc();

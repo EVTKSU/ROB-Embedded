@@ -2,10 +2,10 @@
 
 #include "EVT_StateMachine.h"
 #include "EVT_VescDriver.h"
-#include "EVT_Ethernet.hpp"
 #include "EVT_AutoMode.h"
-#include "EVT_ODriver.h"
 
+#include <EVT_Ethernet.hpp>
+#include <EVT_ODriver.hpp>
 #include <EVT_RC.hpp>
 
 #include "TransmitterConstants.hpp"
@@ -18,6 +18,14 @@ using namespace Constants;
 // int loop_count = 0;
 // int loops_per_telem = 10;
 
+// NONE,   < No state defined.
+// INIT,   < Initialization state.
+// IDLE,   < Idle state.  
+// CALIB,  < Calibration state.
+// RC,     < Remote Control state.
+// AUTO,   < Autonomous state.
+// ERR,    < Error state.
+
 unsigned long currentTime = 0UL;
 unsigned long lastUpdate = 0UL;
 unsigned long lastWaitingPrintMs = 0UL;
@@ -27,34 +35,39 @@ unsigned long lastWaitingPrintMs = 0UL;
  * @brief One time setup code
  */
 void setup() {
+  // Begin the serial monitor for the teensy output
   Serial.begin(IOConstants::serialBaudrate);
 
   pinMode(IOConstants::ledBuiltIn, OUTPUT);
-
-  while (!Serial && millis() < 4'000UL) {
-  }
-
-  Serial.println("main2 starting");
-  Serial.println("USB serial uses IOConstants::serialBaudrate");
-  Serial.println("SBUS input uses IOConstants::sBusSerial (Serial1 / RX pin 0)");
 
   ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultJoystick, Signals::ControlRC::mapType::JOYSTICK);
   ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultSwitch, Signals::ControlRC::mapType::SWITCH);
   ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultTriSwitch, Signals::ControlRC::mapType::TRI_SWITCH);
   ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultKnob, Signals::ControlRC::mapType::KNOB);
 
-  // Set all the relay pins to output
+  // Set the contactor relays to OUTPUT pin mode
   pinMode(IOConstants::oDriveRelay, OUTPUT);
   pinMode(IOConstants::eBrakeRelay, OUTPUT);
   pinMode(IOConstants::vescRelay, OUTPUT);
+
+  // Set the LED relays to OUTPUT pin mode
   pinMode(IOConstants::redLedRelay, OUTPUT);
   pinMode(IOConstants::greenLedRelay, OUTPUT);
   pinMode(IOConstants::yellowLedRelay, OUTPUT);
 
-  // Turn on the relays to power on contactors
+  // Power on ODrive contactor
   digitalWrite(IOConstants::oDriveRelay, HIGH);
   digitalWrite(IOConstants::eBrakeRelay, HIGH);
   digitalWrite(IOConstants::vescRelay, HIGH);
+
+
+  // Perform the initial ODrive setup check
+  ModuleConstants::odrive.setup();
+
+  SetState(NONE);
+  
+  // Set the car into initialization state 
+  SetState(INIT); 
 
   ModuleConstants::ethernet.setupUDP();
 
@@ -67,9 +80,9 @@ void setup() {
   //Initialize all the modules
   Serial.println("Initializing modules...");
   setupVesc();
-  setupOdrv();
   
 
+  // Get the current time in milliseconds for timing
   currentTime = millis();
   lastUpdate = currentTime;
   lastWaitingPrintMs = currentTime;
@@ -215,9 +228,9 @@ void loop() {
     }
 
     if (GetState() == INIT) {
-      updateOdrvControl();
+      ModuleConstants::odrive.updateRC();
 
-      if (systemInitialized) {
+      if (ModuleConstants::odrive.isCalibrated()) {
         SetState(RC);
       }
     } else if (GetState() == IDLE) {
@@ -226,7 +239,7 @@ void loop() {
         SetState(RC);
       }
     } else if (GetState() == RC) {
-      updateOdrvControl();
+      ModuleConstants::odrive.updateRC();
       updateVescControl();
     }
 

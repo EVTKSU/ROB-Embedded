@@ -145,7 +145,7 @@ namespace Signals {
 
 
   bool ControlRC::mapSwitches(uint16_t val) {
-    return val == TransmitterConstants::minRC ? false : true;
+    return val <= TransmitterConstants::midRC ? false : true;
   }
 
 
