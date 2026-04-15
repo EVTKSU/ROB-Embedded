@@ -14,13 +14,19 @@
 *//*---------------------------------------------------------------------------*/
 
 #include <EVT_RC.hpp>
+#include <EVT_VescDriver.hpp>
+
+#include "IOConstants.hpp"
 
 namespace Constants {
   struct ModuleConstants {
     static Signals::ControlRC transmitter;
-
+    static MotorControls::VescDriver vesc;
 
   };
+
+  Signals::ControlRC ModuleConstants::transmitter;
+  MotorControls::VescDriver ModuleConstants::vesc {&IOConstants::vescSerial};
 }
 
 #endif // MODULE_CONSTANTS

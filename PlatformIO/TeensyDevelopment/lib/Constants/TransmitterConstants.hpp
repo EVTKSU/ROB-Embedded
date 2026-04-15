@@ -33,6 +33,13 @@ namespace Constants {
     static const uint16_t minRC = 307;      // Minimum RC value
     static const uint16_t midRC = 974;      // Mid range RC value
     static const uint16_t maxRC = 1'640;    // Maximum RC value
+
+    static constexpr double deadbandPercent = 0.05;     // Total deadband percentage area
+    static const uint16_t deadbandVariance = maxRC * (deadbandPercent / 2); // Deadband variance from center in either direction
+    static constexpr uint16_t deadbandBounds[2] = { // Lower and upper deadband bounds
+      midRC - deadbandVariance, // Lower deadband bound
+      midRC + deadbandVariance  // Upper deadband bound
+    };
   };
 }
 

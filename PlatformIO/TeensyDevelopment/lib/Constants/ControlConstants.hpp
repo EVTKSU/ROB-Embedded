@@ -20,7 +20,12 @@ namespace Constants {
    * @note More or less, these are used for PID gains and rate limits
    */
   struct ControlConstants {
+    static constexpr float vescMinBrake = 0.0f;
+    static constexpr float vescMaxBrake = 30.0f;
     
+    static constexpr float vescMinERPM = 0.0f;
+    static constexpr float vescMaxERPM = 7500.0f;
+    static constexpr float vescERPMLimit = 800.0f;
   };
 }
 

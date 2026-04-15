@@ -7,6 +7,7 @@
 // #include "EVT_ODriver.h"
 
 #include <EVT_RC.hpp>
+#include <EVT_VescDriver.hpp>
 
 #include "TransmitterConstants.hpp"
 #include "ConversionConstants.hpp"
@@ -22,24 +23,38 @@ using namespace Constants;
 // AUTO,   < Autonomous state.
 // ERR,    < Error state.
 
-bool autonomous = false;
-int loop_count = 0;
-int loops_per_telem = 10;
-
-Signals::ControlRC transmitter;
 unsigned long currentTime = 0UL;
+unsigned long lastUpdate = 0UL;
+
+MotorControls::SlewRateLimiter test {1};
+unsigned long testTarget = 1000000000UL;
 
 
 /**
  * @brief One time setup code
  */
 void setup() {
+  // Begin the serial monitor for the teensy
   Serial.begin(IOConstants::serialBaudrate);
 
-  transmitter.setMapping(TransmitterConstants::defaultJoystick, Signals::ControlRC::mapType::JOYSTICK);
-  transmitter.setMapping(TransmitterConstants::defaultSwitch, Signals::ControlRC::mapType::SWITCH);
-  transmitter.setMapping(TransmitterConstants::defaultTriSwitch, Signals::ControlRC::mapType::TRI_SWITCH);
-  transmitter.setMapping(TransmitterConstants::defaultKnob, Signals::ControlRC::mapType::KNOB);
+  // Set all the default mapping functions for the RC transmitter
+  ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultJoystick, Signals::ControlRC::mapType::JOYSTICK);
+  ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultSwitch, Signals::ControlRC::mapType::SWITCH);
+  ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultTriSwitch, Signals::ControlRC::mapType::TRI_SWITCH);
+  ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultKnob, Signals::ControlRC::mapType::KNOB);
+
+  // Set the contactor relay pins to output
+  pinMode(IOConstants::oDriveRelay, OUTPUT);
+  pinMode(IOConstants::eBrakeRelay, OUTPUT);
+  pinMode(IOConstants::vescRelay, OUTPUT);
+  pinMode(IOConstants::redLedRelay, OUTPUT);
+  pinMode(IOConstants::greenLedRelay, OUTPUT);
+  pinMode(IOConstants::yellowLedRelay, OUTPUT);
+
+  // Power on all the contactors 
+  // digitalWrite(IOConstants::oDriveRelay, HIGH);
+  digitalWrite(IOConstants::eBrakeRelay, HIGH);
+  digitalWrite(IOConstants::vescRelay, HIGH);
 
   /*
   SetState(NONE);
@@ -47,21 +62,6 @@ void setup() {
   // Set the car into initialization state 
   SetState(INIT); 
 
-  // Set the contactor relay pins to output
-  pinMode(IOConstants::oDriveRelay, OUTPUT);
-  pinMode(IOConstants::eBrakeRelay, OUTPUT);
-  pinMode(IOConstants::vescRelay, OUTPUT);
-
-  // Sets the LED dome relay pins to output
-  pinMode(IOConstants::redLedRelay, OUTPUT);
-  pinMode(IOConstants::greenLedRelay, OUTPUT);
-  pinMode(IOConstants::yellowLedRelay, OUTPUT);
-
-  // Power on all the contactors 
-  Serial.println("Powering up contactors...");
-  digitalWrite(IOConstants::oDriveRelay, HIGH);
-  digitalWrite(IOConstants::eBrakeRelay, HIGH);
-  digitalWrite(IOConstants::vescRelay, HIGH);
   delay(1'000);
   
   // Initialize all the modules 
@@ -192,11 +192,13 @@ void loop() {
   }
   */
 
-  if ((currentTime - millis()) >= (ConversionConstants::secToMillis / IOConstants::sBusReceiveFrequency)) {
-    transmitter.update();
+  if ((currentTime - lastUpdate) >= (ConversionConstants::secToMillis / IOConstants::sBusReceiveFrequency)) {
+    ModuleConstants::transmitter.update();
+    ModuleConstants::vesc.updateRC(ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_Y, false));
 
-    Serial.print("Value: ");
-    Serial.println(transmitter.getChannelValue(Signals::ChannelRC::VRA));
+    ModuleConstants::vesc.printState();
+
+    lastUpdate = millis();
   }
 
   currentTime = millis();
