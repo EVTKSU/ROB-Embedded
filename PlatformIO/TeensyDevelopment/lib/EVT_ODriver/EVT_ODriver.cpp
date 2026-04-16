@@ -388,12 +388,11 @@ namespace MotorControls {
     Serial.println("Performing initial calibration");
 
     // Run the ODrive motor calibration 
-    oDrive.setState(ODriveAxisState::AXIS_STATE_MOTOR_CALIBRATION);
-    delay(4'000); 
+    oDrive.setState(ODriveAxisState::AXIS_STATE_FULL_CALIBRATION_SEQUENCE);
 
-    // Runs the ODrive encoder position calibration 
-    oDrive.setState(ODriveAxisState::AXIS_STATE_ENCODER_OFFSET_CALIBRATION);
-    delay(4'000);
+    while (oDrive.getState() != ODriveAxisState::AXIS_STATE_IDLE) {
+      delay(20);
+    }
 
     // Clear the ODrive errors and set into IDLE state 
     oDrive.clearErrors();
@@ -401,7 +400,7 @@ namespace MotorControls {
 
     // Give some time to manually center the steering
     Serial.printf(
-      "You have %0.2f seconds to center the steering\n",
+      "You have %0.1f seconds to center the steering\n",
       steeringCenterTime
     );
 

@@ -29,9 +29,9 @@ namespace Constants {
     static const int eBrakeRelay = 4;
     static const int vescRelay = 5;
 
-    static const int redLedRelay = 21;
+    static const int yellowLedRelay = 21;
     static const int greenLedRelay = 22;
-    static const int yellowLedRelay = 23;
+    static const int redLedRelay = 23;
 
     static const int fanPin = 29;
 

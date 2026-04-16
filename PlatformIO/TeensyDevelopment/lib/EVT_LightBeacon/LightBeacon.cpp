@@ -20,19 +20,15 @@ namespace Signals {
 
   void LightBeacon::setColorState(ColorLED color, bool blink, float time) {
     if (blink && ((millis() - lastBlink) >= ((1'000 * time) / 2))) {
-      digitalWrite(colorBeacon.red, (currentColor.red && isOn) ? HIGH : LOW);
-      digitalWrite(colorBeacon.green, (currentColor.green && isOn) ? HIGH : LOW);
-      digitalWrite(colorBeacon.yellow, (currentColor.yellow && isOn) ? HIGH : LOW);
-
       isOn = !isOn;
 
       lastBlink = millis();
-    } else {
-      digitalWrite(colorBeacon.red, currentColor.red ? HIGH : LOW);
-      digitalWrite(colorBeacon.green, currentColor.green ? HIGH : LOW);
-      digitalWrite(colorBeacon.yellow, currentColor.yellow ? HIGH : LOW);
-
+    } else if (!blink) {
       isOn = true;
     }
+
+    digitalWrite(colorBeacon.red, (currentColor.red && isOn) ? HIGH : LOW);
+    digitalWrite(colorBeacon.green, (currentColor.green && isOn) ? HIGH : LOW);
+    digitalWrite(colorBeacon.yellow, (currentColor.yellow && isOn) ? HIGH : LOW);
   }
 }

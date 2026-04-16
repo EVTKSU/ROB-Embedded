@@ -53,12 +53,12 @@ namespace MotorControls {
       float absCenterPos;                      // Mesaured center position 
       float currentPos;                        // Current ODrive position
       
-      const float velLimit = 180.0f;           // Maximum velocity in turns per second
+      const float velLimit = 140.0f;           // Maximum velocity in turns per second
       const float accelLimit = 400.0f;         // Maximum acceleration in turns per second squared
-      const float maxTurns = 4.2f;             // Maximum turns in either direction 
+      const float maxTurns = 2.1f;             // Maximum turns in either direction 
 
       const float positionGain = 100.0f;       // ODrive position proportional gain
-      const float velocityGain = 0.072f;       // ODrive velocity proportional gain
+      const float velocityGain = 0.05f;       // ODrive velocity proportional gain
       const float integratorGain = 0.0f;       // ODrive velocity integration gain
 
       const float softMaxCurrent = 30.0f;      // ODrive continuous current limit
