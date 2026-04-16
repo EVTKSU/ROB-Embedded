@@ -401,7 +401,7 @@ namespace MotorControls {
 
     // Give some time to manually center the steering
     Serial.printf(
-      "You have %f seconds to center the steering\n",
+      "You have %0.2f seconds to center the steering\n",
       steeringCenterTime
     );
 
@@ -455,7 +455,9 @@ namespace MotorControls {
 
   
   void ODriver::updateRC() {
-    ModuleConstants::transmitter.update();
+    if (!ModuleConstants::transmitter.update()) {
+      return;
+    }
 
     // LED heartbeat until system is initialized 
     if (!systemInitialized && (millis() - initTime) > 500) { 
@@ -476,20 +478,6 @@ namespace MotorControls {
         return;
       }
     }
-
-
-    // Clear the active ODrive errors when SWH is pulled
-    // if (ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWH, Signals::ControlRC::mapSwitches) && !errorClearFlag) {
-    //   errorClearFlag = true;
-    //   Serial.println("Clearing errors");
-    //   oDrive.clearErrors();
-    //   systemInitialized = false;
-    // }
-
-    // if (ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWH, Signals::ControlRC::mapSwitches)) {
-    //   errorClearFlag = false;
-    // }
-
 
     // Maps current target and sets deadband
     currentTarget = ModuleConstants::transmitter.getChannelValue<float>(
@@ -533,6 +521,13 @@ namespace MotorControls {
     for (int i = 0; i < (sizeof(cmd) / sizeof(cmd[0])); i++) {
       IOConstants::oDriveSerial.println(cmd[i]);
     }
+  }
+
+
+  void ODriver::reset() {
+    Serial.println("Clearing errors");
+    oDrive.clearErrors();
+    systemInitialized = false;
   }
 
 

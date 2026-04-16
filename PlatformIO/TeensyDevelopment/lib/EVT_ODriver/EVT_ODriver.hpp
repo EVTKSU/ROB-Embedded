@@ -168,6 +168,12 @@ namespace MotorControls {
 
 
       /**
+       * @brief Reset the odrive so it can be reinitialized
+       */
+      void reset();
+
+
+      /**
        * @brief Gets the current target position 
        * 
        * @return The current target position in turns 

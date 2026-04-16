@@ -1,7 +1,9 @@
 #include <Arduino.h>
 
-#include "EVT_VescDriver.h"
 #include "EVT_AutoMode.h"
+
+#include <EVT_Ethernet.hpp>
+#include <EVT_RC.hpp>
 
 #include "TransmitterConstants.hpp"
 #include "ConversionConstants.hpp"
@@ -14,10 +16,12 @@ unsigned long lastUpdate = 0UL;       // Timestamp in milliseconds of the last a
 unsigned long lastWaitingPrint = 0UL; // Timestamp in milliseconds of the last serial output denoting a bad frame
 unsigned long lastPrintMessage = 0UL; // Timestamp in milliseconds of the last serial output
 
-bool ledState = false; // Current state of the on board LED
+bool ledState = false;  // Current state of the on board LED
 
-bool resetInput;       // Input value as a boolean from the reset channel (SWH)
-bool rcInput;          // Input value as a boolean from the RC toggle channel (SWF)
+bool resetInput;        // Input value as a boolean from the reset channel (SWH)
+bool rcInput;           // Input value as a boolean from the RC toggle channel (SWF)
+
+uint16_t throttleInput; // Throttle input for VESC 
 
 
 /**
@@ -29,6 +33,7 @@ void setup() {
 
   // Set the on board LED pin to OUTPUT
   pinMode(IOConstants::ledBuiltIn, OUTPUT);
+  digitalWrite(IOConstants::ledBuiltIn, HIGH);
 
   // Set the default mapping for the RC channels 
   ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultJoystick, Signals::ControlRC::mapType::JOYSTICK);
@@ -64,7 +69,7 @@ void setup() {
       ModuleConstants::stateMachine.setState(Signals::States::RESET);
     } else {
       ModuleConstants::odrive.updateRC();
-      updateVescControl();
+      ModuleConstants::vesc.updateRC(throttleInput);
     }
   });
 
@@ -113,7 +118,9 @@ void setup() {
   Serial.println("Initializing modules...");
   ModuleConstants::odrive.setup();
   ModuleConstants::ethernet.setupUDP();
-  setupVesc();
+
+  // Set the car into idle state
+    ModuleConstants::stateMachine.setState(Signals::States::IDLE);
 
   // Get the current time in milliseconds for timing
   currentTime = millis();
@@ -233,26 +240,27 @@ void loop() {
   }
   */
 
-  if (!ModuleConstants::transmitter.update()) {
-    if ((currentTime - lastWaitingPrint) >= 1'000) {
-      Serial.println("Waiting for valid SBUS frame...");
-      lastWaitingPrint = millis();
-    }
-
-    return;
-  }
-
   // Keep SBUS handling in the RC module
   // Wait for SWA-triggered ODrive calibration before transitioning to RC
   if ((currentTime - lastUpdate) >= (ConversionConstants::secToMillis / IOConstants::updateFrequency)) {
-    ModuleConstants::transmitter.update();
+    if (!ModuleConstants::transmitter.update()) {
+      if ((currentTime - lastWaitingPrint) >= 1'000UL) {
+        Serial.println("Waiting for valid SBUS frame...");
+        lastWaitingPrint = millis();
+      }
 
-    resetInput = ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWH, Signals::ControlRC::mapSwitches);
-    rcInput = ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWF, Signals::ControlRC::mapSwitches);
+      return;
+    }
+    
+    resetInput = ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWH, false);
+    rcInput = ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWF, false);
+    throttleInput = ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_Y, false);
 
     if (ModuleConstants::stateMachine.isInState(Signals::States::RC) && resetInput) {
       Serial.println("SWH -> IDLE");
       ModuleConstants::stateMachine.setState(Signals::States::IDLE);
+
+      ModuleConstants::odrive.reset();
     }
 
     if (ModuleConstants::stateMachine.isInState(Signals::States::IDLE) && (rcInput && !resetInput)) {
@@ -260,13 +268,13 @@ void loop() {
       ModuleConstants::stateMachine.setState(Signals::States::RC);
     } else if (ModuleConstants::stateMachine.isInState(Signals::States::RC)) {
       ModuleConstants::odrive.updateRC();
-      updateVescControl();
+      ModuleConstants::vesc.updateRC(throttleInput);
     }
 
     ModuleConstants::stateMachine.runState();
     ModuleConstants::ethernet.sendTelemetry();
-
-    lastUpdate = millis();
+    lastUpdate = currentTime;
+    lastWaitingPrint = currentTime;
   }
 
   currentTime = millis();

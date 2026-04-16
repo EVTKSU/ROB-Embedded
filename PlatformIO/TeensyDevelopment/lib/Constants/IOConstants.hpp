@@ -48,20 +48,20 @@ namespace Constants {
     static constexpr HardwareSerial & oDriveSerial = Serial6; // UART used for the ODrive
     static constexpr HardwareSerial & vescSerial = Serial2;   // UART used for the VESC
 
-    static const Signals::BeaconPins lightPins;
+    static Signals::BeaconPins lightPins;
 
-    static const Signals::ColorLED colorOff;
-    static const Signals::ColorLED red;
-    static const Signals::ColorLED green;
-    static const Signals::ColorLED yellow;
+    static Signals::ColorLED colorOff;
+    static Signals::ColorLED red;
+    static Signals::ColorLED green;
+    static Signals::ColorLED yellow;
   };
 
-  Signals::BeaconPins lightPins {IOConstants::redLedRelay, IOConstants::greenLedRelay, IOConstants::yellowLedRelay};
+  Signals::BeaconPins IOConstants::lightPins {IOConstants::redLedRelay, IOConstants::greenLedRelay, IOConstants::yellowLedRelay};
   
-  Signals::ColorLED colorOff {false, false, false};
-  Signals::ColorLED red {true, false, false};
-  Signals::ColorLED green {false, true, false};
-  Signals::ColorLED yellow {false, false, true};
+  Signals::ColorLED IOConstants::colorOff {false, false, false};
+  Signals::ColorLED IOConstants::red {true, false, false};
+  Signals::ColorLED IOConstants::green {false, true, false};
+  Signals::ColorLED IOConstants::yellow {false, false, true};
 }
 
 #endif // IO_CONSTANTS
