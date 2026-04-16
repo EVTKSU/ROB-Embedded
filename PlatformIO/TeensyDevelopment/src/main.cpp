@@ -1,12 +1,7 @@
 #include <Arduino.h>
 
-#include "EVT_StateMachine.h"
 #include "EVT_VescDriver.h"
 #include "EVT_AutoMode.h"
-
-#include <EVT_Ethernet.hpp>
-#include <EVT_ODriver.hpp>
-#include <EVT_RC.hpp>
 
 #include "TransmitterConstants.hpp"
 #include "ConversionConstants.hpp"
@@ -14,21 +9,15 @@
 #include "IOConstants.hpp"
 using namespace Constants;
 
-// bool autonomous = false;
-// int loop_count = 0;
-// int loops_per_telem = 10;
+unsigned long currentTime = 0UL;      // Current timestamp in milliseconds
+unsigned long lastUpdate = 0UL;       // Timestamp in milliseconds of the last attempted update to all values 
+unsigned long lastWaitingPrint = 0UL; // Timestamp in milliseconds of the last serial output denoting a bad frame
+unsigned long lastPrintMessage = 0UL; // Timestamp in milliseconds of the last serial output
 
-// NONE,   < No state defined.
-// INIT,   < Initialization state.
-// IDLE,   < Idle state.  
-// CALIB,  < Calibration state.
-// RC,     < Remote Control state.
-// AUTO,   < Autonomous state.
-// ERR,    < Error state.
+bool ledState = false; // Current state of the on board LED
 
-unsigned long currentTime = 0UL;
-unsigned long lastUpdate = 0UL;
-unsigned long lastWaitingPrintMs = 0UL;
+bool resetInput;       // Input value as a boolean from the reset channel (SWH)
+bool rcInput;          // Input value as a boolean from the RC toggle channel (SWF)
 
 
 /**
@@ -38,54 +27,96 @@ void setup() {
   // Begin the serial monitor for the teensy output
   Serial.begin(IOConstants::serialBaudrate);
 
+  // Set the on board LED pin to OUTPUT
   pinMode(IOConstants::ledBuiltIn, OUTPUT);
 
+  // Set the default mapping for the RC channels 
   ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultJoystick, Signals::ControlRC::mapType::JOYSTICK);
   ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultSwitch, Signals::ControlRC::mapType::SWITCH);
   ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultTriSwitch, Signals::ControlRC::mapType::TRI_SWITCH);
   ModuleConstants::transmitter.setMapping(TransmitterConstants::defaultKnob, Signals::ControlRC::mapType::KNOB);
+
+  // Sets the behavior of the NONE state 
+  ModuleConstants::stateMachine.defineState(Signals::States::NONE, [&] () {
+    ModuleConstants::light.setColorState(IOConstants::yellow);
+
+    if ((currentTime - lastUpdate) >= (ConversionConstants::secToMillis / (2 * IOConstants::ledBlinkFrequency))) {
+      digitalWrite(IOConstants::ledBuiltIn, ledState = !ledState ? HIGH : LOW);
+    }
+  });
+
+  // Sets the behavior of the IDLE state
+  ModuleConstants::stateMachine.defineState(Signals::States::IDLE, [&] () {
+    ModuleConstants::light.setColorState(IOConstants::yellow, true, 1.0);
+
+    if (ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWF, Signals::ControlRC::mapSwitches) && !ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWH, Signals::ControlRC::mapSwitches)) {
+      ModuleConstants::stateMachine.setState(Signals::States::RC);
+    }
+  });
+
+  // Sets the behavior of the RC state
+  ModuleConstants::stateMachine.defineState(Signals::States::RC, [&] () {
+    ModuleConstants::light.setColorState(IOConstants::green);
+
+    if (ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWD, Signals::ControlRC::mapSwitches)) {
+      ModuleConstants::stateMachine.setState(Signals::States::AUTO);
+    } else if (ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWH, Signals::ControlRC::mapSwitches)) {
+      ModuleConstants::stateMachine.setState(Signals::States::RESET);
+    } else {
+      ModuleConstants::odrive.updateRC();
+      updateVescControl();
+    }
+  });
+
+  // Sets the behavior of the AUTO state
+  ModuleConstants::stateMachine.defineState(Signals::States::AUTO, [&] () {
+    ModuleConstants::light.setColorState(IOConstants::green, true, 1.0);
+  });
+
+  // Sets the behavior of the ERROR state
+  ModuleConstants::stateMachine.defineState(Signals::States::ERROR, [&] () {
+    ModuleConstants::light.setColorState(IOConstants::red);
+
+    Serial.println("An error occurred");
+    Serial.println("Toggle SWH to reset");
+
+    if (ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWH, Signals::ControlRC::mapSwitches)) {
+      ModuleConstants::stateMachine.setState(Signals::States::RESET);
+    }
+
+    digitalWrite(IOConstants::oDriveRelay, LOW);
+    digitalWrite(IOConstants::eBrakeRelay, LOW);
+    digitalWrite(IOConstants::vescRelay, LOW);
+  });
+
+  // Sets the behavior of the STOP state
+  ModuleConstants::stateMachine.defineState(Signals::States::STOP, [&] () {
+    ModuleConstants::light.setColorState(IOConstants::red, true, 1.0);
+  });
+
+  // Sets the behavior of the RESET state
+  ModuleConstants::stateMachine.defineState(Signals::States::RESET, [&] () {
+    ModuleConstants::light.setColorState(IOConstants::colorOff);
+  });
 
   // Set the contactor relays to OUTPUT pin mode
   pinMode(IOConstants::oDriveRelay, OUTPUT);
   pinMode(IOConstants::eBrakeRelay, OUTPUT);
   pinMode(IOConstants::vescRelay, OUTPUT);
 
-  // Set the LED relays to OUTPUT pin mode
-  pinMode(IOConstants::redLedRelay, OUTPUT);
-  pinMode(IOConstants::greenLedRelay, OUTPUT);
-  pinMode(IOConstants::yellowLedRelay, OUTPUT);
-
   // Power on ODrive contactor
   digitalWrite(IOConstants::oDriveRelay, HIGH);
   digitalWrite(IOConstants::eBrakeRelay, HIGH);
   digitalWrite(IOConstants::vescRelay, HIGH);
 
-
-  // Perform the initial ODrive setup check
-  ModuleConstants::odrive.setup();
-
-  SetState(NONE);
-  
-  // Set the car into initialization state 
-  SetState(INIT); 
-
-  ModuleConstants::ethernet.setupUDP();
-
-  
-  SetState(NONE);
-
-  // Set the car into initialization state
-  SetState(INIT);
-
-  //Initialize all the modules
+  // Perform the initial setup
   Serial.println("Initializing modules...");
+  ModuleConstants::odrive.setup();
+  ModuleConstants::ethernet.setupUDP();
   setupVesc();
-  
 
   // Get the current time in milliseconds for timing
   currentTime = millis();
-  lastUpdate = currentTime;
-  lastWaitingPrintMs = currentTime;
 }
 
 
@@ -202,49 +233,41 @@ void loop() {
   }
   */
 
-  const bool gotValidFrame = ModuleConstants::transmitter.update();
-  currentTime = millis();
-
-  if (!gotValidFrame) {
-    if ((currentTime - lastWaitingPrintMs) >= 1'000UL) {
+  if (!ModuleConstants::transmitter.update()) {
+    if ((currentTime - lastWaitingPrint) >= 1'000) {
       Serial.println("Waiting for valid SBUS frame...");
-      lastWaitingPrintMs = currentTime;
+      lastWaitingPrint = millis();
     }
+
     return;
   }
 
-  // Keep SBUS handling in the RC module; during INIT, wait for SWA-triggered
-  // ODrive calibration before transitioning to RC.
+  // Keep SBUS handling in the RC module
+  // Wait for SWA-triggered ODrive calibration before transitioning to RC
   if ((currentTime - lastUpdate) >= (ConversionConstants::secToMillis / IOConstants::updateFrequency)) {
-    digitalWrite(IOConstants::ledBuiltIn, HIGH);
-    const uint16_t resetInput =
-        ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWH, false);
-    const uint16_t rcInput =
-        ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWF, false);
+    ModuleConstants::transmitter.update();
 
-    if (GetState() == RC && resetInput > 1500) {
-      Serial.println("SWH ▶ IDLE");
-      SetState(IDLE);
+    resetInput = ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWH, Signals::ControlRC::mapSwitches);
+    rcInput = ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWF, Signals::ControlRC::mapSwitches);
+
+    if (ModuleConstants::stateMachine.isInState(Signals::States::RC) && resetInput) {
+      Serial.println("SWH -> IDLE");
+      ModuleConstants::stateMachine.setState(Signals::States::IDLE);
     }
 
-    if (GetState() == INIT) {
-      ModuleConstants::odrive.updateRC();
-
-      if (ModuleConstants::odrive.isCalibrated()) {
-        SetState(RC);
-      }
-    } else if (GetState() == IDLE) {
-      if (resetInput < 1500 && rcInput > 900) {
-        Serial.println("SWF ▶ RC");
-        SetState(RC);
-      }
-    } else if (GetState() == RC) {
+    if (ModuleConstants::stateMachine.isInState(Signals::States::IDLE) && (rcInput && !resetInput)) {
+      Serial.println("SWF -> RC");
+      ModuleConstants::stateMachine.setState(Signals::States::RC);
+    } else if (ModuleConstants::stateMachine.isInState(Signals::States::RC)) {
       ModuleConstants::odrive.updateRC();
       updateVescControl();
     }
 
+    ModuleConstants::stateMachine.runState();
     ModuleConstants::ethernet.sendTelemetry();
-    lastUpdate = currentTime;
-    lastWaitingPrintMs = currentTime;
+
+    lastUpdate = millis();
   }
+
+  currentTime = millis();
 }

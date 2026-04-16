@@ -18,8 +18,8 @@ namespace Signals {
   }
 
 
-  void LightBeacon::setColorState(ColorLED color, bool blink, int time) {
-    if (blink && ((millis() - lastBlink) >= (time / 2))) {
+  void LightBeacon::setColorState(ColorLED color, bool blink, float time) {
+    if (blink && ((millis() - lastBlink) >= ((1'000 * time) / 2))) {
       digitalWrite(colorBeacon.red, (currentColor.red && isOn) ? HIGH : LOW);
       digitalWrite(colorBeacon.green, (currentColor.green && isOn) ? HIGH : LOW);
       digitalWrite(colorBeacon.yellow, (currentColor.yellow && isOn) ? HIGH : LOW);

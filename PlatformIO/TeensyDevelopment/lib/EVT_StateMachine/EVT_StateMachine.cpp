@@ -1,53 +1,67 @@
-#include "EVT_StateMachine.h"
-#include "EVT_VescDriver.h"
-// Define the global state variable.
-STATE CurrentState = NONE;
+#include <EVT_StateMachine.hpp>
 
-STATE GetState() {
-    return CurrentState;
-}
+namespace Signals {
+  StateMachine::StateMachine(States initstate) {
+    currentState = initstate;
+    setStateDefaults();
+  }
 
 
-void SetState(STATE newState) {
-    CurrentState = newState;
-    if (newState == ERR) {
-        Serial.println("=========================== ERROR OCCURRED ===========================");
-        Serial.println("=========================== ERROR OCCURRED ===========================");
-        Serial.println("=========================== ERROR OCCURRED ===========================");
+  void StateMachine::setState(States newState) {
+    if (newState < numStates ) {
+      currentState = newState;
     } else {
-        Serial.println("======================================================================");
-        Serial.print("SETTING STATE: ");
-        Serial.println(StateToString(CurrentState));  // Print the state as a string.
-        Serial.println("======================================================================");
+      Serial.printf("Invalid State: %d\n", newState);
+      currentState = States::IDLE;
     }
-}
 
-void SetErrorState(const char* location, const char* reason) {
-    CurrentState = ERR;
-    Serial.println("=========================== ERROR OCCURRED ===========================");
-    Serial.println("=========================== ERROR OCCURRED ===========================");
-    Serial.println("=========================== ERROR OCCURRED ===========================");
-    Serial.println("======================================================================");
-    Serial.print("Reason: ");
-    Serial.println(reason);
-    Serial.print("Location: ");
-    Serial.println(location);
-    Serial.println("======================================================================");
-    Serial.println("=========================== ERROR OCCURRED ===========================");
-    Serial.println("=========================== ERROR OCCURRED ===========================");
-    Serial.println("=========================== ERROR OCCURRED ===========================");
-}
+    printState();
+  }
 
-void PrintState(){
-    Serial.println(StateToString(CurrentState)); 
-}
 
-const char* StateToString(STATE s) {
-    if (s >= 0 && s <= ERR) {
-        return state_names[s];
-    } else {
-        return "INVALID_STATE"; // Handle out-of-range values
+  void StateMachine::runState() {
+    stateFunctions[currentState]();
+  }
+
+
+  void StateMachine::defineState(States state, function<void(void)> func) {
+    stateFunctions[state] = func;
+  }
+
+
+  void StateMachine::printState() {
+    Serial.printf(
+      "Current State: %s [%u]\n",
+      toString(currentState),
+      currentState
+    );
+  }
+
+
+  void StateMachine::setStateDefaults() {
+    for (States state : allStates) {
+      defineState(state, [&] () {});
     }
-}
+  }
 
-    
+
+  States StateMachine::getState() {
+    return currentState;
+  }
+
+
+  bool StateMachine::isInState(States checkState) {
+    return (currentState == checkState);
+  }
+
+
+  const char * StateMachine::toString(States state) {
+    return stateNames[state];
+  }
+
+
+  bool StateMachine::checkError() {
+    // Add implementation later
+    return false;
+  }
+}

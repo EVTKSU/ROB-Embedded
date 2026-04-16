@@ -63,7 +63,7 @@ namespace Signals {
        * @param blink Condition for if the LED is blinking or not (Default off)
        * @param time Amount of time of a full blink on and off cycle
        */
-      void setColorState(ColorLED color, bool blink = false, int time = 0);
+      void setColorState(ColorLED color, bool blink = false, float time = 0);
   };
 };
 

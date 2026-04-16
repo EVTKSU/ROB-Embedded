@@ -126,6 +126,14 @@ namespace MotorControls {
 
 
       /**
+       * @brief Gets the current input mode as a string
+       * 
+       * @return The current ODrive input mode as a string
+       */
+      String getInputModeString();
+
+
+      /**
        * @brief Runs the ODrive calibration sequence
        */
       void initCalibration();

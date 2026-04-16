@@ -15,6 +15,8 @@
 
 #include <Arduino.h>
 
+#include <LightBeacon.hpp>
+
 
 namespace Constants {
   /**
@@ -35,6 +37,7 @@ namespace Constants {
 
     static constexpr double updateFrequency = 50.0;
     static constexpr double ledBlinkFrequency = 1.0;
+    static constexpr double printSerialFrequency = 1.0;
 
     static const unsigned long serialBaudrate = 9'600UL;
     static const unsigned long sBusBaudrate = 100'000UL;
@@ -44,7 +47,21 @@ namespace Constants {
     static constexpr HardwareSerial & sBusSerial = Serial1;   // UART used for the RC receiver
     static constexpr HardwareSerial & oDriveSerial = Serial6; // UART used for the ODrive
     static constexpr HardwareSerial & vescSerial = Serial2;   // UART used for the VESC
+
+    static const Signals::BeaconPins lightPins;
+
+    static const Signals::ColorLED colorOff;
+    static const Signals::ColorLED red;
+    static const Signals::ColorLED green;
+    static const Signals::ColorLED yellow;
   };
+
+  Signals::BeaconPins lightPins {IOConstants::redLedRelay, IOConstants::greenLedRelay, IOConstants::yellowLedRelay};
+  
+  Signals::ColorLED colorOff {false, false, false};
+  Signals::ColorLED red {true, false, false};
+  Signals::ColorLED green {false, true, false};
+  Signals::ColorLED yellow {false, false, true};
 }
 
 #endif // IO_CONSTANTS

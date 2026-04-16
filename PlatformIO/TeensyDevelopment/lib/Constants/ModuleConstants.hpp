@@ -16,11 +16,18 @@
 #include <EVT_RC.hpp>
 #include <EVT_ODriver.hpp>
 #include <EVT_Ethernet.hpp>
+#include <EVT_StateMachine.hpp>
+#include <LightBeacon.hpp>
+
+#include "IOConstants.hpp"
 
 namespace Constants {
   struct ModuleConstants {
     static Signals::ControlRC transmitter;
     static Signals::EthernetEVT ethernet;
+    static Signals::StateMachine stateMachine;
+    static Signals::LightBeacon light;
+
     static MotorControls::ODriver odrive;
   };
 
@@ -33,6 +40,9 @@ namespace Constants {
 
   Signals::ControlRC ModuleConstants::transmitter;
   Signals::EthernetEVT ModuleConstants::ethernet;
+  Signals::StateMachine ModuleConstants::stateMachine;
+  Signals::LightBeacon ModuleConstants::light {yellow, lightPins};
+
   MotorControls::ODriver ModuleConstants::odrive;
 }
 

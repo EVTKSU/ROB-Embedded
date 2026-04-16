@@ -358,6 +358,32 @@ namespace MotorControls {
   }
 
 
+  String ODriver::getInputModeString() {
+    switch ((ODriveInputMode)oDrive.getParameterAsInt("axis0.controller.config.input_mode")) {
+      case (ODriveInputMode::INPUT_MODE_INACTIVE):
+        return "INPUT_MODE_INACTIVE";
+      case (ODriveInputMode::INPUT_MODE_PASSTHROUGH):
+        return "INPUT_MODE_PASSTHROUGH";
+      case (ODriveInputMode::INPUT_MODE_VEL_RAMP):
+        return "INPUT_MODE_VEL_RAMP";
+      case (ODriveInputMode::INPUT_MODE_POS_FILTER):
+        return "INPUT_MODE_POS_FILTER";
+      case (ODriveInputMode::INPUT_MODE_MIX_CHANNELS):
+        return "INPUT_MODE_MIX_CHANNELS";
+      case (ODriveInputMode::INPUT_MODE_TRAP_TRAJ):
+        return "INPUT_MODE_TRAP_TRAJ";
+      case (ODriveInputMode::INPUT_MODE_TORQUE_RAMP):
+        return "INPUT_MODE_TORQUE_RAMP";
+      case (ODriveInputMode::INPUT_MODE_MIRROR):
+        return "INPUT_MODE_MIRROR";
+      case (ODriveInputMode::INPUT_MODE_TUNING):
+        return "INPUT_MODE_TUNING";
+      default:
+        return "";
+    }
+  }
+
+
   void ODriver::initCalibration() {
     Serial.println("Performing initial calibration");
 
@@ -394,7 +420,7 @@ namespace MotorControls {
     while ((oDrive.getState() != ODriveAxisState::AXIS_STATE_CLOSED_LOOP_CONTROL) && (millis() - initTime < 5'000)) {
       oDrive.clearErrors();
       oDrive.setState(ODriveAxisState::AXIS_STATE_CLOSED_LOOP_CONTROL);
-      delay(5'000);
+      delay(20);
     }
 
     Serial.println("Starting closed loop control");

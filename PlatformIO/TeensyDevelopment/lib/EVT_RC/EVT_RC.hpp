@@ -31,7 +31,7 @@ namespace Signals {
   /**
    * @brief Enum used for selection of RC channel values 
    */
-  enum ChannelRC {
+  enum ChannelRC : uint8_t {
     RIGHT_X = 0, // Joystick axis for steering
     RIGHT_Y,     // Unassigned joystick axis 
     LEFT_Y,      // Joystick axis for throttle and brake
@@ -39,8 +39,8 @@ namespace Signals {
     SWA,         // Toggle switch for calibration 
     SWB,         // Unassinged toggle switch
     SWC,         // Unassinged toggle switch
-    SWD,         // Unassinged toggle switch
-    SWF,         // Toggle switch for autonomous 
+    SWD,         // Toggle switch for entering AUTO
+    SWF,         // Toggle switch for entering RC 
     SWE,         // Unassinged three state toggle switch
     SWH,         // Momentary toggle switch for reset 
     SWG,         // Unassinged three state toggle switch
@@ -72,7 +72,7 @@ namespace Signals {
       /**
        * @brief Enum used for selection of mapping values 
        */
-      enum mapType {
+      enum mapType : uint8_t {
         JOYSTICK = 0,
         SWITCH,
         TRI_SWITCH,
