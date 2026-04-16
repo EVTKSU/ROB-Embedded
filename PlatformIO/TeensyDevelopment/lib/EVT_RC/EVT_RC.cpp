@@ -2,7 +2,7 @@
 
 namespace Signals {
   ControlRC::ControlRC() {
-    IOConstants::sBusSerial.begin(100'000, SERIAL_8E2); // Begin the sBus serial port
+    IOConstants::sBusSerial.begin(IOConstants::sBusBaudrate, SERIAL_8E2); // Begin the sBus serial port
     sBus.begin(); // Begin the sBus communication 
 
     delay(500);
@@ -10,7 +10,10 @@ namespace Signals {
 
 
   bool ControlRC::update() {
-    return sBus.read(channelVal, &sBusFailsafe, &sBusLostFrame);
+    uint16_t nextChannelVal[TransmitterConstants::numChannels];
+    if (!sBus.read(nextChannelVal, &sBusFailsafe, &sBusLostFrame) || sBusLostFrame || sBusFailsafe) return false;
+    for (int i = 0; i < TransmitterConstants::numChannels; i++) channelVal[i] = nextChannelVal[i];
+    return true;
   }
 
 
@@ -142,7 +145,7 @@ namespace Signals {
 
 
   bool ControlRC::mapSwitches(uint16_t val) {
-    return val == TransmitterConstants::minRC ? false : true;
+    return val <= TransmitterConstants::midRC ? false : true;
   }
 
 

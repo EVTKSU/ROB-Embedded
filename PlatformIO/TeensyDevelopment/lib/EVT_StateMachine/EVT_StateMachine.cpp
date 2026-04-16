@@ -1,5 +1,5 @@
 #include "EVT_StateMachine.h"
-#include "EVT_VescDriver.h"
+#include <EVT_VescDriver.hpp>
 // Define the global state variable.
 STATE CurrentState = NONE;
 

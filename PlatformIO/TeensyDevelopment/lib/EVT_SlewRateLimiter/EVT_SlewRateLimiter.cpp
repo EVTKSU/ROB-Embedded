@@ -28,7 +28,7 @@ namespace MotorControls {
     
     lastValue += constrain(               // Constrain the value change
       targetValue - lastValue,            // Change in value since previous iteration 
-      maxDecrease * (timeChange / 1000),  // Maximum decrease value 
+      -maxDecrease * (timeChange / 1000), // Maximum decrease value 
       maxIncrease * (timeChange / 1000)   // Maximum increase value
     );
 

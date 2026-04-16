@@ -3,7 +3,7 @@
 
 /*-----------------------------------------------------------------------------*/
 /** 
- * @file   ControlRC.hpp
+ * @file   EVT_RC.hpp
  * @brief  Header for ControlRC class
  * 
  * The ControlRC class is used to receive data from an RC receiver over SBUS. 

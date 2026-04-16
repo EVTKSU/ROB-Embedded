@@ -1,5 +1,4 @@
 #include <EVT_VescDriver.hpp>
-#include <EVT_RC.hpp>
 
 #include "ModuleConstants.hpp"
 #include "IOConstants.hpp"
@@ -18,7 +17,6 @@ namespace MotorControls {
      * TODO:
      *   - Throw error when reaching the else
     **/
-
     if (throttleChannel <= TransmitterConstants::deadbandBounds[1] && throttleChannel >= TransmitterConstants::deadbandBounds[0]) {
       targetValues.brakeCommand = 0.0f;
       targetValues.erpmCommand = 0.0f;
@@ -27,6 +25,8 @@ namespace MotorControls {
 
       vesc.setBrakeCurrent(targetValues.brakeCommand);
       vesc.setCurrent(0.0f);
+
+      Serial.println("In deadband");
     } else if (throttleChannel <= TransmitterConstants::deadbandBounds[0] && targetValues.erpmCommand == 0) {
       targetValues.brakeCommand = map(
         throttleChannel,
@@ -35,6 +35,8 @@ namespace MotorControls {
         ControlConstants::vescMaxBrake,
         ControlConstants::vescMinBrake
       );
+
+      printState();
 
       vesc.setBrakeCurrent(targetValues.brakeCommand);
     } else if (throttleChannel >= TransmitterConstants::deadbandBounds[1] && targetValues.brakeCommand == 0) {
@@ -47,10 +49,12 @@ namespace MotorControls {
           ControlConstants::vescMaxERPM
         )),
         ControlConstants::vescMinERPM,
-        ControlConstants::vescMaxBrake
+        ControlConstants::vescMaxERPM
       );
 
-      vesc.setRPM(targetValues.erpmCommand);
+      printState();
+
+      vesc.setRPM(-(targetValues.erpmCommand));
     } else {
       Serial.println("Bad Value");
     }
@@ -63,7 +67,7 @@ namespace MotorControls {
       return;
     }
 
-    vesc.setRPM(erpm);
+    vesc.setRPM(-(erpm));
   }
 
 
