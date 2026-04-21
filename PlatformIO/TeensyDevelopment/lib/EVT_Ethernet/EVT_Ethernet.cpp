@@ -146,18 +146,18 @@ namespace Signals {
     snprintf(
       telemetryBuffer,
       sizeof(telemetryBuffer),
-      "%d,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%d,%d",
-      0,      // Emergency flag
-      "None", // Current State
-      0.0f,   // VESC ERPM target
-      0.0f,   // ODrive position
-      0.0f,   // ODrive voltage
-      0.0f,   // VESC voltage
-      0.0f,   // ODrive current
-      0.0f,   // VESC current 
-      0.0f,   // Target steering position
-      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X),   // RC steering input position
-      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y)    // RC throttle input ERPM
+      "%d,%s,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%d,%d",
+      ModuleConstants::stateMachine.checkError(),                                       // Emergency flag
+      ModuleConstants::stateMachine.toString(ModuleConstants::stateMachine.getState()), // Current State
+      ModuleConstants::vesc.getState().erpmCommand,                                     // VESC ERPM target
+      ModuleConstants::odrive.getFeedback().pos,                                        // ODrive position
+      ModuleConstants::odrive.getVoltage(),                                             // ODrive voltage
+      ModuleConstants::vesc.getVoltage(),                                               // VESC voltage
+      ModuleConstants::odrive.getCurrent(),                                             // ODrive current
+      ModuleConstants::vesc.getCurrent(),                                               // VESC current 
+      ModuleConstants::odrive.getTarget(),                                              // Target steering position
+      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false), // RC steering input position
+      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false)   // RC throttle input ERPM
     );
 
     // Serial.println(telemetryBuffer);
