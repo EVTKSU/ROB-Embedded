@@ -14,10 +14,12 @@
 *//*---------------------------------------------------------------------------*/
 
 #include <Arduino.h>
+#include <SPI.h>
 
 #include <LightBeacon.hpp>
 
 #include <stdint.h>
+
 
 
 namespace Constants {
@@ -54,6 +56,8 @@ namespace Constants {
     static constexpr HardwareSerial & sBusSerial = Serial1;   // UART used for the RC receiver
     static constexpr HardwareSerial & oDriveSerial = Serial6; // UART used for the ODrive
     static constexpr HardwareSerial & vescSerial = Serial2;   // UART used for the VESC
+	
+	static constexpr SPIClass& driveEncoderSPI = SPI1;
 
     static Signals::BeaconPins lightPins;
 
