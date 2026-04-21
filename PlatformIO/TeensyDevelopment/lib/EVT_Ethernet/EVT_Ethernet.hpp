@@ -1,6 +1,18 @@
 #ifndef EVT_TELEMETRY_H
 #define EVT_TELEMETRY_H
 
+/*-----------------------------------------------------------------------------*/
+/** 
+ * @file   EVT_Ethernet.hpp
+ * @brief  Header for EthernetEVT class
+ * 
+ * The EthernetEVT class is used to both send and receive telemetry packets 
+ * between the Teensy 4.1 and the Latte Panda Sigma 
+ * 
+ * @author Nyx Turbeville
+ * @date   April 20, 2026
+*//*---------------------------------------------------------------------------*/
+
 #include <Arduino.h>
 #include <NativeEthernet.h>
 #include <NativeEthernetUdp.h>
@@ -19,6 +31,9 @@ std::string receiveUdp();
 */
 
 namespace Signals {
+  /**
+   * @brief Class used for communications of UDP packets 
+   */
   class EthernetEVT {
     private:
       EthernetUDP udp;
