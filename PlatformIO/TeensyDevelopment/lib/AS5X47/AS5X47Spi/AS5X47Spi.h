@@ -31,7 +31,7 @@
 #ifndef AS5X47COMMUNICATION_h
 #define AS5X47COMMUNICATION_h
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include <SPI.h>
 
 /**

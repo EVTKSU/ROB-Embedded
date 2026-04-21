@@ -31,44 +31,44 @@
 #include "AS5X47Spi.h"
 
 AS5X47Spi::AS5X47Spi(uint8_t _chipSelectPin) {
-	// Initialize SPI Communication
+	// Initialize SPI1 Communication
 	chipSelectPin = _chipSelectPin;
 	pinMode(chipSelectPin, OUTPUT);
 	digitalWrite(chipSelectPin, HIGH);
-	SPI.begin();
+	SPI1.begin();
 }
 
 
 void AS5X47Spi::writeData(uint16_t command, uint16_t value) {
 	// @todo Expose the SPI Maximum Frequency in library interface.
-	SPI.beginTransaction(SPISettings(100000, MSBFIRST, SPI_MODE1));
+	SPI1.beginTransaction(SPISettings(100000, MSBFIRST, SPI_MODE1));
 	// Send command
 	digitalWrite(chipSelectPin, LOW);
-	SPI.transfer16(command);
+	SPI1.transfer16(command);
 	digitalWrite(chipSelectPin, HIGH);
 	delayMicroseconds(1);
 	// Read data
 	digitalWrite(chipSelectPin, LOW);
-	SPI.transfer16(value);
+	SPI1.transfer16(value);
 	digitalWrite(chipSelectPin, HIGH);
-	SPI.endTransaction();
+	SPI1.endTransaction();
 	delayMicroseconds(1);
 
 }
 
 uint16_t AS5X47Spi::readData(uint16_t command, uint16_t nopCommand) {
-	SPI.beginTransaction(SPISettings(100000, MSBFIRST, SPI_MODE1));
+	SPI1.beginTransaction(SPISettings(100000, MSBFIRST, SPI_MODE1));
 
 	// Send Read Command
 	digitalWrite(chipSelectPin, LOW);
-	SPI.transfer16(command);
+	SPI1.transfer16(command);
 	digitalWrite(chipSelectPin, HIGH);
 	delayMicroseconds(1);
 	// Send Nop Command while receiving data
 	digitalWrite(chipSelectPin, LOW);
-	uint16_t receivedData = SPI.transfer16(nopCommand);
+	uint16_t receivedData = SPI1.transfer16(nopCommand);
 	digitalWrite(chipSelectPin, HIGH);
-	SPI.endTransaction();
+	SPI1.endTransaction();
 	delayMicroseconds(1);
 	return receivedData;
 }
