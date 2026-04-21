@@ -143,7 +143,7 @@ namespace Signals {
 
 
   void EthernetEVT::sendTelemetry() {
-    snprintf(
+    /*snprintf(
       telemetryBuffer,
       sizeof(telemetryBuffer),
       "%d,%s,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%d,%d",
@@ -159,6 +159,7 @@ namespace Signals {
       ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false), // RC steering input position
       ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false)   // RC throttle input ERPM
     );
+	*/
 
     // Serial.println(telemetryBuffer);
 

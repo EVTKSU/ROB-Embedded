@@ -16,7 +16,6 @@
 
 #include <Arduino.h>
 
-
 namespace Constants {
   /**
    * @brief Constants used for various conversion ratio 
@@ -27,6 +26,9 @@ namespace Constants {
 
     static constexpr double degToRad = (PI / 180);
     static constexpr double radToDeg = (180 / PI);
+
+	// 0 or 1. Could be a boolean to ig.
+	static constexpr uint8_t isDriveEncoderInverted = 0;
   };
 }; 
 

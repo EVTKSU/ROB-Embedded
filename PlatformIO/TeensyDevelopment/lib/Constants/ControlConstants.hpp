@@ -1,6 +1,8 @@
 #ifndef CONTROL_CONSTANTS
 #define CONTROL_CONSTANTS
 
+#include <stdint.h>
+
 /*-----------------------------------------------------------------------------*/
 /** 
  * @file   ControlConstants.hpp
