@@ -28,6 +28,9 @@ namespace Constants {
     static constexpr float vescMinERPM = 0.0f;
     static constexpr float vescMaxERPM = 7'500.0f;
     static constexpr float vescERPMLimit = 1'500.0f;
+
+    static constexpr float steeringMaxDegrees = 37.8f;
+    static constexpr float steeringMaxTurns = 2.25f;
   };
 }
 

@@ -76,6 +76,8 @@ void setup() {
 
     if (ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWG, Signals::ControlRC::mapSwitches)) {
       ModuleConstants::stateMachine.setState(Signals::States::IDLE);
+    } else {
+      updateAutonomousMode();
     }
   });
 
