@@ -27,7 +27,13 @@ namespace Constants {
 
     static constexpr double degToRad = (PI / 180);
     static constexpr double radToDeg = (180 / PI);
+
+    static constexpr double radToTurns = (1 / (2 * PI));
+    static constexpr double turnsToRad = (2 * PI);
+
+    static constexpr double degToTurns = (1 / 360);
+    static constexpr double turnsToDeg = 360;
   };
-}; 
+}
 
 #endif // CONVERSION_CONSTANTS

@@ -18,35 +18,22 @@
 #include <NativeEthernetUdp.h>
 #include <string>
 
-/*
-// Global Telemetry objects and variables.
-extern EthernetUDP Udp;
-extern IPAddress ip;
-extern byte mac[];
-
-// Telemetry function prototypes.
-void setupTelemetryUDP();
-void sendTelemetry();
-std::string receiveUdp();
-*/
-
 namespace Signals {
   /**
    * @brief Class used for communications of UDP packets 
    */
   class EthernetEVT {
     private:
-      EthernetUDP udp;
+      EthernetUDP udp; // Ethernet class instance used to send and receive packets
 
-      IPAddress teensyIP {192, 168, 0, 177};
-      IPAddress pandaIP  {192, 168, 0, 121};
+      IPAddress teensyIP {192, 168, 0, 177};              // Teensy 4.1 IP address 
+      IPAddress pandaIP  {192, 168, 0, 121};              // Latte Panda Sigma IP address
+      byte mac[6] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}; // Latte Panda Sigma MAC address 
 
-      byte mac[6] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
+      char autoBuffer[256];      // Telemetry packet buffer from Latte Panda Sigma 
+      char telemetryBuffer[256]; // Telemetry packet buffer from Teensy 4.1
 
-      char autoBuffer[256];
-      char telemetryBuffer[256];
-
-      uint16_t telemPort = 5005;
+      uint16_t telemPort = 5005; // Telemetry UDP port 
     public:
       /**
        * @brief Sets up the UDP telemetry
@@ -57,9 +44,21 @@ namespace Signals {
 
 
       /**
-       * @brief Sends the telemetry packet 
+       * @brief Sends the telemetry packet
+       * 
+       * @param error Boolean to denote an error in the low level 
+       * @param state Current state of the State Machine
+       * @param rpm VESC rpm
+       * @param steering ODrive steering 
+       * @param oDrvVolt ODrive voltage
+       * @param vescVolt VESC voltage
+       * @param oDrvCurr ODrive current
+       * @param vescCurr VESC current
+       * @param oDrvTarget ODrive target position 
+       * @param steer RC steering input
+       * @param throttle RC throttle input
        */
-      void sendTelemetry();
+      void sendTelemetry(bool error, const char * state, float rpm, float steering, float oDrvVolt, float vescVolt, float oDrvCurr, float vescCurr, float oDrvTarget, uint16_t steer, uint16_t throttle);
 
 
       /**

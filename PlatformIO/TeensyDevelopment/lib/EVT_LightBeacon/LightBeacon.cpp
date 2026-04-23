@@ -27,6 +27,10 @@ namespace Signals {
       isOn = true;
     }
 
+    currentColor.red = color.red;
+    currentColor.green = color.green;
+    currentColor.yellow = color.yellow;
+
     digitalWrite(colorBeacon.red, (currentColor.red && isOn) ? HIGH : LOW);
     digitalWrite(colorBeacon.green, (currentColor.green && isOn) ? HIGH : LOW);
     digitalWrite(colorBeacon.yellow, (currentColor.yellow && isOn) ? HIGH : LOW);

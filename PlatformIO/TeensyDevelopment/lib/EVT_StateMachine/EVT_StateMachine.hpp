@@ -64,8 +64,17 @@ namespace Signals {
         States::RESET
       };
 
-      function<void(void)> stateFunctions[numStates]; // Void functions defined for each state 
-
+      function<void(void)> stateFunctions[numStates]; // Void functions defined for each state
+      
+      
+      /**
+       * @brief Sets all states to do nothing
+       * 
+       * @note If the teensy has an undefined state, it will throw an error 
+       *       and exit loop. Because of this, defining all states to have
+       *       something to run is absolutely necessary
+       */
+      void setStateDefaults();
     public:
       /**
        * @brief Defines a new instance of state machine 
@@ -107,14 +116,7 @@ namespace Signals {
       void printState();
 
 
-      /**
-       * @brief Sets all states to do nothing
-       * 
-       * @note If the teensy has an undefined state, it will throw an error 
-       *       and exit loop. Because of this, defining all states to at least
-       *       have something to run is absolutely necessary
-       */
-      void setStateDefaults();
+      void setErrorState();
 
 
       /**

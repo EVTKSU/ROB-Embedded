@@ -8,32 +8,10 @@
 
 #include <EVT_SlewRateLimiter.hpp>
 
+#include "ControlConstants.hpp"
 #include "IOConstants.hpp"
 using namespace Constants;
 
-// #define STATUS_LED_PIN 13
-
-// // Global ODrive flag and debug string.
-
-// extern HardwareSerial &odrive_serial;
-// extern bool systemInitialized;
-// extern String odrvDebug;
-// extern float target;
-// // Declare the ODriveUART object so it can be used across modules.
-// extern ODriveUART odrive;
-
-// // global ODrive function prototypes.
-// void setupOdrv();
-// void updateOdrvControl();
-// void getOdrvErrors();
-// float getTarget();
-
-
-/**
- * TODO:
- *   - Confirm the mapping works 
- *   - Confirm the slewrate limiter works
-**/
 
 namespace MotorControls {
   /**
@@ -66,14 +44,13 @@ namespace MotorControls {
 
       const double steeringCenterTime = 10.0;  // Allowed time delay to center the steering 
 
-      const float rateLimit = 50.0f;           // Maximum allowed change in position 
-      SlewRateLimiter turnLimiter {rateLimit}; // Rate limiter for the steering motor
+      SlewRateLimiter turnLimiter {ControlConstants::oDriveSteeringInputLimit}; // Rate limiter for the steering motor
       
       unsigned long lastPrintTime = 0UL;       // Previous print time in miliseconds
       unsigned long initTime = 0UL;            // Start time for the initialization method 
     public:
       /**
-       * @brief Defines a new ODriver given a serial port
+       * @brief Defines a new ODriver instance
        */
       ODriver();
 
@@ -180,6 +157,22 @@ namespace MotorControls {
        */
       float getTarget();
 
+      
+      /**
+       * @brief Gets the voltage of the ODrive 
+       *
+       * @return Voltage reading from the ODrive  
+       */
+      float getVoltage();
+
+
+      /**
+       * @brief Gets the current of the ODrive 
+       * 
+       * @return Current reading from the ODrive 
+       */
+      float getCurrent();
+
 
       /**
        * @brief Checks if calibration is true
@@ -187,6 +180,14 @@ namespace MotorControls {
        * @return A boolean value dependent on if ODrive has been calibrated
        */
       bool isCalibrated();
+
+
+      /**
+       * @brief Gets the ODrive feedback values 
+       *
+       * @return ODriveFeedback struct of position and velocity 
+       */
+      ODriveFeedback getFeedback();
   };
 }
 

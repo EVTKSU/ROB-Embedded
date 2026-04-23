@@ -63,7 +63,6 @@ namespace Signals {
             joystickMap[1]
           );
         case (ChannelRC::SWA):
-        case (ChannelRC::SWB):
         case (ChannelRC::SWD):
         case (ChannelRC::SWF):
         case (ChannelRC::SWH):
@@ -78,6 +77,7 @@ namespace Signals {
             switchMap[0],
             switchMap[1]
           );
+        case (ChannelRC::SWB):
         case (ChannelRC::SWC):
         case (ChannelRC::SWE):
         case (ChannelRC::SWG):

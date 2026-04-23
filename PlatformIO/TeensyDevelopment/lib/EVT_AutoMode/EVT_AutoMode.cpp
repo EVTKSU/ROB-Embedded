@@ -2,10 +2,9 @@
 #include <SPI.h>
 #include <sstream>
 
-#include <EVT_VescDriver.hpp>
-#include <EVT_Ethernet.hpp>
-#include <EVT_ODriver.hpp>
+#include <EVT_AutoMode.hpp>
 
+#include "ConversionConstants.hpp"
 #include "ModuleConstants.hpp"
 using namespace Constants;
 
@@ -105,7 +104,7 @@ void updateAutonomousMode() {
 
   Serial.print(" | Throttle(rpm): ");
   Serial.print(throttleRpm);
-  Serial.print(" steering(turns): ");
+  Serial.print(" | Steering (turns): ");
   Serial.print(SteeringPos);
   Serial.print(" | Emergency: ");
   Serial.println(emergency ? "YES" : "NO");
@@ -115,9 +114,97 @@ void updateAutonomousMode() {
 
   CtrlVesc();
   CtrlOdrive();
-  ModuleConstants::ethernet.sendTelemetry();
+  ModuleConstants::ethernet.sendTelemetry(
+    ModuleConstants::stateMachine.checkError(),
+    ModuleConstants::stateMachine.toString(ModuleConstants::stateMachine.getState()),
+    (float)(ModuleConstants::vesc.getState().erpmCommand / ControlConstants::vescPolePairs),
+    ModuleConstants::odrive.getFeedback().pos,
+    ModuleConstants::odrive.getVoltage(),
+    ModuleConstants::vesc.getVoltage(),
+    ModuleConstants::odrive.getCurrent(),
+    ModuleConstants::vesc.getCurrent(),
+    ModuleConstants::odrive.getTarget(),
+    ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false),
+    ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false)
+  );
 
   if (!rawCommands.empty()) {
     setControls(rawCommands);
+  }
+}
+
+
+namespace Signals {
+  void AutoDriver::updateAuto(const std::string & udpData) {
+    if (!udpData.empty()) { // Update the UDP data if the packet isn't an empty string
+      strncpy(udpBuffer, udpData.c_str(), sizeof(udpData) - 1);
+      udpBuffer[sizeof(udpData) - 1] = '\0';
+
+      token = strtok(udpBuffer, ",");
+      index = 0;
+
+      while (token != nullptr) {
+        switch (index) {
+          case 0:
+            vescRPM = atof(token);
+            break;
+          case 1:
+            steeringAngle = atof(token);
+            break;
+          case 2:
+            brakeCurrent = atof(token);
+            break;
+          case 3:
+            emergencyFlag = (atoi(token) != 0);
+            break;
+        }
+
+        token = strtok(nullptr, ",");
+        index++;
+      }
+
+
+      if (index < numFields) { // Skips updating values if a malformed packet is received
+        Serial.printf("Malformed control packet (expected %d fields): ", numFields);
+        Serial.println(udpData.c_str());
+      } else {
+        if (emergencyFlag) { // Stop the VESC and go into error state if an error occurs 
+          if (Serial) {
+            Serial.println("Emergency Flag encountered");
+          }
+  
+          updateVESC(0.0f, 0.0f);
+
+          ModuleConstants::stateMachine.setErrorState();
+        } else { // Update the ODrive and VESC if no error occurs 
+          updateODrive(steeringAngle);
+          updateVESC(vescRPM, brakeCurrent);
+        }
+      }
+    } else { // Print a warning to the Serial Monitor if the UDP packet is empty
+      if (Serial) {
+        Serial.println("Received empty UDP packet");
+      }
+    }
+  }
+
+
+  void AutoDriver::updateODrive(float steeringAngle) {
+    // Map the steering angle of the ODrive to a position 
+    ModuleConstants::odrive.updateAuto(map(
+      steeringAngle, 
+      (-ControlConstants::oDriveMaxTurns * ConversionConstants::turnsToDeg * ControlConstants::oDriveGearRatio),
+      (ControlConstants::oDriveMaxTurns * ConversionConstants::turnsToDeg * ControlConstants::oDriveGearRatio),
+      -ControlConstants::oDriveMaxTurns,
+      ControlConstants::oDriveMaxTurns
+    ));
+  }
+
+
+  void AutoDriver::updateVESC(float rpm, float current) {
+    ModuleConstants::vesc.updateAuto(
+      (rpm * ControlConstants::vescPolePairs), 
+      current
+    );
   }
 }

@@ -13,21 +13,26 @@
  * @date   March 18, 2026
 *//*---------------------------------------------------------------------------*/
 
-#include <EVT_RC.hpp>
 #include <EVT_VescDriver.hpp>
-
-#include <EVT_Ethernet.hpp>
-#include <EVT_StateMachine.hpp>
 #include <EVT_ODriver.hpp>
+
+#include <EVT_StateMachine.hpp>
+#include <EVT_Ethernet.hpp>
+#include <EVT_AutoMode.hpp>
 #include <LightBeacon.hpp>
+#include <EVT_RC.hpp>
 
 #include "IOConstants.hpp"
 
 namespace Constants {
+  /**
+   * @brief Modules used throughout the code base 
+   */
   struct ModuleConstants {
-    static Signals::ControlRC transmitter;
-    static Signals::EthernetEVT ethernet;
     static Signals::StateMachine stateMachine;
+    static Signals::ControlRC transmitter;
+    static Signals::AutoDriver autoDriver;
+    static Signals::EthernetEVT ethernet;
     static Signals::LightBeacon light;
     
     static MotorControls::VescDriver vesc;    
@@ -41,10 +46,11 @@ namespace Constants {
    *   they must be defined outside of the struct 
   // ------------------------------------------------------------ */
 
-  Signals::ControlRC ModuleConstants::transmitter;
-  Signals::EthernetEVT ModuleConstants::ethernet;
-  Signals::StateMachine ModuleConstants::stateMachine;
   Signals::LightBeacon ModuleConstants::light {IOConstants::yellow, IOConstants::lightPins};
+  Signals::StateMachine ModuleConstants::stateMachine;
+  Signals::ControlRC ModuleConstants::transmitter;
+  Signals::AutoDriver ModuleConstants::autoDriver;
+  Signals::EthernetEVT ModuleConstants::ethernet;
   
   MotorControls::ODriver ModuleConstants::odrive;
   MotorControls::VescDriver ModuleConstants::vesc {&IOConstants::vescSerial};

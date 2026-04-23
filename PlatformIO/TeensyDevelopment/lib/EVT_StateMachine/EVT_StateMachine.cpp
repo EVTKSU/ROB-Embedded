@@ -45,6 +45,11 @@ namespace Signals {
   }
 
 
+  void StateMachine::setErrorState() {
+    
+  }
+
+
   States StateMachine::getState() {
     return currentState;
   }
@@ -61,7 +66,6 @@ namespace Signals {
 
 
   bool StateMachine::checkError() {
-    // Add implementation later
-    return false;
+    return isInState(States::ERROR);
   }
 }

@@ -14,9 +14,7 @@
 *//*---------------------------------------------------------------------------*/
 
 #include <Arduino.h>
-
 #include <LightBeacon.hpp>
-
 
 namespace Constants {
   /**
@@ -37,7 +35,11 @@ namespace Constants {
 
     static constexpr double updateFrequency = 50.0;
     static constexpr double ledBlinkFrequency = 1.0;
+    static constexpr double telemetryFrequency = 1.0;
     static constexpr double printSerialFrequency = 1.0;
+
+    static const bool telemetryToSerial = false;
+    static const bool motorDataToSerial = true;
 
     static const unsigned long serialBaudrate = 9'600UL;
     static const unsigned long sBusBaudrate = 100'000UL;

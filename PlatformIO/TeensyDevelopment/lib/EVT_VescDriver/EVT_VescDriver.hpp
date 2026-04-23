@@ -96,6 +96,22 @@ namespace MotorControls {
        * @return VescValues 
        */
       VescValues getState();
+
+
+      /**
+       * @brief Gets the VESC input voltage
+       * 
+       * @return VESC input voltage as a float 
+       */
+      float getVoltage();
+
+
+      /**
+       * @brief Gets the VESC current
+       * 
+       * @return VESC input current as a float 
+       */
+      float getCurrent();
   };
 }
 

@@ -34,8 +34,6 @@ namespace MotorControls {
         ControlConstants::vescMinBrake
       );
 
-      printState();
-
       vesc.setBrakeCurrent(targetValues.brakeCommand);
     } else if (throttleChannel >= TransmitterConstants::deadbandBounds[1] && targetValues.brakeCommand == 0) {
       targetValues.erpmCommand = constrain(
@@ -49,8 +47,6 @@ namespace MotorControls {
         ControlConstants::vescMinERPM,
         ControlConstants::vescMaxERPM
       );
-
-      printState();
 
       vesc.setRPM(targetValues.erpmCommand);
     } else {
@@ -134,11 +130,21 @@ namespace MotorControls {
 
   
   void VescDriver::printState() {
-    Serial.printf("ERPM - %.3f\t| Brake Current - %.3f\n", targetValues.erpmCommand, targetValues.brakeCommand);
+    Serial.printf("ERPM - %.2f\t| Brake Current - %.2f\n", targetValues.erpmCommand, targetValues.brakeCommand);
   }
 
 
   VescValues VescDriver::getState() {
     return targetValues;
+  }
+
+
+  float VescDriver::getVoltage() {
+    return vesc.data.inpVoltage;
+  }
+
+
+  float VescDriver::getCurrent() {
+    return vesc.data.avgMotorCurrent;
   }
 }

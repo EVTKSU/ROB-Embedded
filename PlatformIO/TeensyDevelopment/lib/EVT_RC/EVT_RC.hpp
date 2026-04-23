@@ -37,7 +37,7 @@ namespace Signals {
     LEFT_Y,      // Joystick axis for throttle and brake
     LEFT_X,      // Unassinged joystick axis
     SWA,         // Toggle switch for calibration 
-    SWB,         // Unassinged toggle switch
+    SWB,         // Unassinged three state toggle switch
     SWC,         // Unassinged toggle switch
     SWD,         // Toggle switch for entering AUTO
     SWF,         // Toggle switch for entering RC 

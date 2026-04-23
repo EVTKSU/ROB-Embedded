@@ -1,4 +1,5 @@
 #include <EVT_Ethernet.hpp>
+#include <EVT_RC.hpp>
 
 #include <SPI.h>
 #include <cstdio>
@@ -6,114 +7,8 @@
 #include <vector>
 #include <cstdlib>
 
-#include <EVT_RC.hpp>
-
 #include "ModuleConstants.hpp"
 using namespace Constants;
-
-/*
-// Global object definitions.
-EthernetUDP Udp;
-IPAddress ip(192, 168, 0, 177);
-byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-
-// Internal buffers for UDP packets.
-char autoBuffer[256];
-static char telemetryPacketBuffer[256];
-
-
-// Telemetry destination details.
-static IPAddress telemetryDestIP(192, 168, 0, 10);  // Panda IP
-static const uint16_t TELEMETRY_DEST_PORT = 5005;  // Matches receiver
-
-// Setup function for initializing Ethernet and UDP.
-void setupTelemetryUDP() {
-  Serial.println("Initializing Telemetry UDP...");
-  Ethernet.begin(mac, ip);
-  Udp.begin(8888);
-  
-  if (Ethernet.hardwareStatus() == EthernetNoHardware) {
-    Serial.println("No Ethernet hardware found.");
-  } else {
-    Serial.println("Ethernet hardware is present.");
-  }
-  
-  if (Ethernet.linkStatus() == LinkON) {
-    Serial.println("Ethernet cable is connected (Link ON).");
-  } else {
-    Serial.println("Ethernet cable is not connected (Link OFF).");
-  }
-
-  delay(1000);
-}
-
-
-// Function to send telemetry data over UDP and display on Serial.
-// Function to send telemetry data over UDP and display on Serial.
-void sendTelemetry() {
-    // Retrieve current ODrive feedback.
-    ODriveFeedback fb = odrive.getFeedback();
-    float steeringAngle = fb.pos;
-    float target = getTarget(); // Get the current target position from ODrive
- 
-    // Get current system state
-    const char* state = StateToString(GetState());
-
-    // Get ODrive telemetry
-    float odrvCurrent = odrive.getParameterAsFloat("ibus");
-    float odrvVoltage = odrive.getParameterAsFloat("vbus_voltage");
-    
-    // Get VESC telemetry
-    float rpm = vesc1.data.rpm;
-    float vescVoltage = vesc1.data.inpVoltage;
-    float vescCurrent = vesc1.data.avgInputCurrent;
-
-    // Update RC data and sample channels
-    updateSbusData();
-    float rcSteeringInput = channels[3];
-    float rcThrottleInput = channels[1];
-
-    // Emergency flag (disabled for now)
-    int emergency = 0;
-
-    // Format the telemetry string
-    snprintf(telemetryPacketBuffer, sizeof(telemetryPacketBuffer),
-             "%d,%s,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f",
-             emergency,
-             state,
-             rpm,
-             steeringAngle,
-             odrvVoltage,
-             vescVoltage,
-             odrvCurrent,
-             vescCurrent,
-             target,  // target is the steering position from odrive
-             rcSteeringInput,
-             rcThrottleInput);
-
-    // Send via UDP
-    Udp.beginPacket(telemetryDestIP, TELEMETRY_DEST_PORT);
-    Udp.write(telemetryPacketBuffer);
-    Udp.endPacket();
-}
-
-
-std::string receiveUdp() {
-  int packetSize = Udp.parsePacket();
-  if (packetSize > 0) {
-    int len = Udp.read(autoBuffer, sizeof(autoBuffer) - 1);
-    if (len > 0) {
-      autoBuffer[len] = '\0';
-    }
-    Serial.print("Received packet: ");
-    Serial.println(autoBuffer);
-    return std::string(autoBuffer);
-  }
-  // Return an empty string if no packet is received.
-  return std::string();
-}
-*/
-
 
 namespace Signals {
   void EthernetEVT::setupUDP() {
@@ -121,6 +16,7 @@ namespace Signals {
       Serial.println("Initializing UDP telemetry");
     }
 
+    // Begin Ethernet communication to the Latte Panda Sigma  
     Ethernet.begin(mac, teensyIP);
     udp.begin(8888);
 
@@ -137,31 +33,34 @@ namespace Signals {
         Serial.println("Ethernet cable is not connected");
       }
     } 
-
-    delay(1'000);
   }
 
 
-  void EthernetEVT::sendTelemetry() {
+  void EthernetEVT::sendTelemetry(bool error, const char * state, float rpm, float steering, float oDrvVolt, float vescVolt, float oDrvCurr, float vescCurr, float oDrvTarget, uint16_t steer, uint16_t throttle) {
+    // Write the necessary values to the packet 
     snprintf(
-      telemetryBuffer,
-      sizeof(telemetryBuffer),
-      "%d,%s,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%d,%d",
-      ModuleConstants::stateMachine.checkError(),                                       // Emergency flag
-      ModuleConstants::stateMachine.toString(ModuleConstants::stateMachine.getState()), // Current State
-      ModuleConstants::vesc.getState().erpmCommand,                                     // VESC ERPM target
-      ModuleConstants::odrive.getFeedback().pos,                                        // ODrive position
-      ModuleConstants::odrive.getVoltage(),                                             // ODrive voltage
-      ModuleConstants::vesc.getVoltage(),                                               // VESC voltage
-      ModuleConstants::odrive.getCurrent(),                                             // ODrive current
-      ModuleConstants::vesc.getCurrent(),                                               // VESC current 
-      ModuleConstants::odrive.getTarget(),                                              // Target steering position
-      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false), // RC steering input position
-      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false)   // RC throttle input ERPM
+      telemetryBuffer,                                         // Packet to be written
+      sizeof(telemetryBuffer),                                 // Size of the allowed packet 
+      "%d,%s,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%d,%d", // Formatted packet string
+      error,                                                   // Emergency flag
+      state,                                                   // Current State
+      rpm,                                                     // VESC RPM target
+      steering,                                                // ODrive position
+      oDrvVolt,                                                // ODrive voltage
+      vescVolt,                                                // VESC voltage
+      oDrvCurr,                                                // ODrive current
+      vescCurr,                                                // VESC current 
+      oDrvTarget,                                              // Target steering position
+      steer,                                                   // RC steering input position
+      throttle                                                 // RC throttle input ERPM
     );
 
-    // Serial.println(telemetryBuffer);
+    // Prints the telemetry packet to the Serial Monitor 
+    if (Serial && IOConstants::telemetryToSerial) {
+      Serial.println(telemetryBuffer);
+    }
 
+    // Write the telemetry packet from the Teensy 4.1 to the Latte Panda Sigma 
     udp.beginPacket(pandaIP, telemPort);
     udp.write(telemetryBuffer);
     udp.endPacket();
@@ -175,9 +74,13 @@ namespace Signals {
         autoBuffer[udp.read(autoBuffer, sizeof(autoBuffer - 1))] = '\0';
       }
 
-      Serial.print("Received Packet: ");
-      Serial.println(autoBuffer);
+      // Print the received packet to the Serial Monitor
+      if (Serial && IOConstants::telemetryToSerial) {
+        Serial.print("Received Packet: ");
+        Serial.println(autoBuffer);
+      }
 
+      // Return the received packet 
       return std::string(autoBuffer);
     }
 
