@@ -16,7 +16,6 @@
 
 #include <Arduino.h>
 
-
 namespace Constants {
   /**
    * @brief Constants used for various conversion ratio 
@@ -33,6 +32,8 @@ namespace Constants {
 
     static constexpr double degToTurns = (1 / 360);
     static constexpr double turnsToDeg = 360;
+    
+	  static constexpr uint8_t isDriveEncoderInverted = 0;
   };
 }
 

@@ -29,46 +29,51 @@
 */
 
 #include "AS5X47Spi.h"
+#include <IOConstants.hpp>
 
+using namespace Constants;
+
+// TODO: Put just a tiny bit of effort into modifiy the library so it takes in
+// an SPI bus.
 AS5X47Spi::AS5X47Spi(uint8_t _chipSelectPin) {
-	// Initialize SPI Communication
+	// Initialize SPI1 Communication
 	chipSelectPin = _chipSelectPin;
 	pinMode(chipSelectPin, OUTPUT);
 	digitalWrite(chipSelectPin, HIGH);
-	SPI.begin();
+	IOConstants::driveEncoderSPI.begin();
 }
 
 
 void AS5X47Spi::writeData(uint16_t command, uint16_t value) {
 	// @todo Expose the SPI Maximum Frequency in library interface.
-	SPI.beginTransaction(SPISettings(100000, MSBFIRST, SPI_MODE1));
+	IOConstants::driveEncoderSPI.beginTransaction(SPISettings(100000, MSBFIRST, SPI_MODE1));
 	// Send command
 	digitalWrite(chipSelectPin, LOW);
-	SPI.transfer16(command);
+	IOConstants::driveEncoderSPI.transfer16(command);
 	digitalWrite(chipSelectPin, HIGH);
 	delayMicroseconds(1);
 	// Read data
 	digitalWrite(chipSelectPin, LOW);
-	SPI.transfer16(value);
+	IOConstants::driveEncoderSPI.transfer16(value);
 	digitalWrite(chipSelectPin, HIGH);
-	SPI.endTransaction();
+	IOConstants::driveEncoderSPI.endTransaction();
 	delayMicroseconds(1);
 
 }
 
 uint16_t AS5X47Spi::readData(uint16_t command, uint16_t nopCommand) {
-	SPI.beginTransaction(SPISettings(100000, MSBFIRST, SPI_MODE1));
+	IOConstants::driveEncoderSPI.beginTransaction(SPISettings(100000, MSBFIRST, SPI_MODE1));
 
 	// Send Read Command
 	digitalWrite(chipSelectPin, LOW);
-	SPI.transfer16(command);
+	IOConstants::driveEncoderSPI.transfer16(command);
 	digitalWrite(chipSelectPin, HIGH);
 	delayMicroseconds(1);
 	// Send Nop Command while receiving data
 	digitalWrite(chipSelectPin, LOW);
-	uint16_t receivedData = SPI.transfer16(nopCommand);
+	uint16_t receivedData = IOConstants::driveEncoderSPI.transfer16(nopCommand);
 	digitalWrite(chipSelectPin, HIGH);
-	SPI.endTransaction();
+	IOConstants::driveEncoderSPI.endTransaction();
 	delayMicroseconds(1);
 	return receivedData;
 }

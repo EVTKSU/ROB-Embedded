@@ -14,11 +14,17 @@
 *//*---------------------------------------------------------------------------*/
 
 #include <Arduino.h>
+#include <SPI.h>
+
 #include <LightBeacon.hpp>
+
+#include <stdint.h>
+
+
 
 namespace Constants {
   /**
-   * @brief Constats used to interface input and output 
+   * @brief Constants used to interface input and output 
    */
   struct IOConstants {
     static const int ledBuiltIn = 13; // Built in LED pin
@@ -32,6 +38,11 @@ namespace Constants {
     static const int redLedRelay = 23;
 
     static const int fanPin = 29;
+
+	inline static constexpr uint8_t driveEncoderCS = 0;
+	inline static constexpr uint8_t driveEncoderMISO = 1;
+	inline static constexpr uint8_t driveEncoderMOSI = 26;
+	inline static constexpr uint8_t driveEncoderSCK = 27;
 
     static constexpr double updateFrequency = 50.0;
     static constexpr double ledBlinkFrequency = 1.0;
@@ -49,6 +60,8 @@ namespace Constants {
     static constexpr HardwareSerial & sBusSerial = Serial1;   // UART used for the RC receiver
     static constexpr HardwareSerial & oDriveSerial = Serial6; // UART used for the ODrive
     static constexpr HardwareSerial & vescSerial = Serial2;   // UART used for the VESC
+	
+	static constexpr SPIClass& driveEncoderSPI = SPI1;
 
     static Signals::BeaconPins lightPins;
 
