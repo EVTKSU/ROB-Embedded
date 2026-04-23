@@ -507,7 +507,8 @@ namespace MotorControls {
 
   void ODriver::updateAuto(float steering) {
     // Send position command (in turns) with a velocity limit
-    oDrive.trapezoidalMove(turnLimiter.calculate(steering));
+    currentTarget = turnLimiter.calculate(steering);
+    oDrive.trapezoidalMove(currentTarget);
   }
 
 
@@ -532,6 +533,42 @@ namespace MotorControls {
 
   float ODriver::getTarget() {
     return currentTarget;
+  }
+
+
+  float ODriver::getTargetDegrees() {
+    return turnsToSteeringDegrees(currentTarget);
+  }
+
+
+  ODriveFeedback ODriver::getFeedback() {
+    fb = oDrive.getFeedback();
+    currentPos = fb.pos;
+    return fb;
+  }
+
+
+  float ODriver::getSteeringDegrees() {
+    return turnsToSteeringDegrees(getFeedback().pos);
+  }
+
+
+  float ODriver::getVoltage() {
+    return oDrive.getParameterAsFloat("vbus_voltage");
+  }
+
+
+  float ODriver::getCurrent() {
+    return oDrive.getParameterAsFloat("ibus");
+  }
+
+
+  float ODriver::turnsToSteeringDegrees(float turns) {
+    return constrain(
+      (turns / ControlConstants::steeringMaxTurns) * ControlConstants::steeringMaxDegrees,
+      -ControlConstants::steeringMaxDegrees,
+      ControlConstants::steeringMaxDegrees
+    );
   }
 
 

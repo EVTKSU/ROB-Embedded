@@ -71,6 +71,8 @@ namespace MotorControls {
       
       unsigned long lastPrintTime = 0UL;       // Previous print time in miliseconds
       unsigned long initTime = 0UL;            // Start time for the initialization method 
+
+      float turnsToSteeringDegrees(float turns);
     public:
       /**
        * @brief Defines a new ODriver given a serial port
@@ -179,6 +181,46 @@ namespace MotorControls {
        * @return The current target position in turns 
        */
       float getTarget();
+
+
+      /**
+       * @brief Gets the current steering target in degrees
+       *
+       * @return Steering target in degrees
+       */
+      float getTargetDegrees();
+
+
+      /**
+       * @brief Gets the latest ODrive feedback
+       *
+       * @return ODriveFeedback containing position and velocity
+       */
+      ODriveFeedback getFeedback();
+
+
+      /**
+       * @brief Gets the current steering position in degrees
+       *
+       * @return Steering position in degrees
+       */
+      float getSteeringDegrees();
+
+
+      /**
+       * @brief Gets the ODrive bus voltage
+       *
+       * @return Voltage in volts
+       */
+      float getVoltage();
+
+
+      /**
+       * @brief Gets the ODrive bus current
+       *
+       * @return Current in amps
+       */
+      float getCurrent();
 
 
       /**

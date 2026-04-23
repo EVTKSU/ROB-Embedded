@@ -149,15 +149,15 @@ namespace Signals {
       "%d,%s,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%d,%d",
       ModuleConstants::stateMachine.checkError(),                                       // Emergency flag
       ModuleConstants::stateMachine.toString(ModuleConstants::stateMachine.getState()), // Current State
-      ModuleConstants::vesc.getState().erpmCommand,                                     // VESC ERPM target
-      ModuleConstants::odrive.getFeedback().pos,                                        // ODrive position
+      ModuleConstants::vesc.getState().erpmCommand,                                     // VESC RPM target
+      ModuleConstants::odrive.getSteeringDegrees(),                                     // Steering angle in degrees
       ModuleConstants::odrive.getVoltage(),                                             // ODrive voltage
       ModuleConstants::vesc.getVoltage(),                                               // VESC voltage
       ModuleConstants::odrive.getCurrent(),                                             // ODrive current
       ModuleConstants::vesc.getCurrent(),                                               // VESC current 
-      ModuleConstants::odrive.getTarget(),                                              // Target steering position
-      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false), // RC steering input position
-      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false)   // RC throttle input ERPM
+      ModuleConstants::odrive.getTargetDegrees(),                                       // Target steering in degrees
+      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false), // RC steering input
+      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false)   // RC throttle input
     );
 
     // Serial.println(telemetryBuffer);
@@ -170,9 +170,11 @@ namespace Signals {
 
   std::string EthernetEVT::receiveUDP() {
     if (udp.parsePacket() > 0) {
-      // Add a stop bit to the packet 
-      if (udp.read(autoBuffer, sizeof(autoBuffer - 1)) > 0) {
-        autoBuffer[udp.read(autoBuffer, sizeof(autoBuffer - 1))] = '\0';
+      int len = udp.read(autoBuffer, sizeof(autoBuffer) - 1);
+      if (len > 0) {
+        autoBuffer[len] = '\0';
+      } else {
+        autoBuffer[0] = '\0';
       }
 
       Serial.print("Received Packet: ");

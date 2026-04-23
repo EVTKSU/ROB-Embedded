@@ -6,6 +6,7 @@
 #include <EVT_Ethernet.hpp>
 #include <EVT_ODriver.hpp>
 
+#include "ControlConstants.hpp"
 #include "ModuleConstants.hpp"
 using namespace Constants;
 
@@ -23,7 +24,7 @@ bool brakeState = false;
 bool coasting = false;
 
 // Function to parse UDP data and update control variables
-// Expected format: "throttle,steering,emergency"
+// Expected format: "throttle_rpm,steering_degrees,emergency"
 void setControls(const std::string &udpData) {
   // Copy string to modifiable buffer
   char udpCopy[128];
@@ -39,7 +40,11 @@ void setControls(const std::string &udpData) {
         throttle = atof(token);
         break;
       case 1:
-        steering = atof(token);
+        steering = constrain(
+          atof(token),
+          -ControlConstants::steeringMaxDegrees,
+          ControlConstants::steeringMaxDegrees
+        );
         break;
       case 2:
         emergency = (atoi(token) != 0);
@@ -59,23 +64,38 @@ void setControls(const std::string &udpData) {
 
 void CtrlVesc() {
   if (emergency) {
-    ModuleConstants::vesc.updateAuto(0.0f, 20.0f);
+    throttleRpm = 0.0f;
+    brakeCurrent = 20.0f;
+    brakeState = true;
+    coasting = false;
+
+    ModuleConstants::vesc.updateAuto(0.0f, brakeCurrent);
     return;
   }
 
   if (throttle < 0.0f) {
-    brakeCurrent = (throttle * -1.0f) / 5; // brake current = throttle value divided by 5. if max throttle is -100 then max brake current is 20A for now. val can be changed
+    throttleRpm = 0.0f;
+    brakeCurrent = constrain(
+      (throttle * -1.0f) / ControlConstants::vescMaxERPM * ControlConstants::vescMaxBrake,
+      ControlConstants::vescMinBrake,
+      ControlConstants::vescMaxBrake
+    );
     brakeState = true;
+    coasting = false;
 
     ModuleConstants::vesc.updateAuto(0.0f, brakeCurrent);
     return;
   } else if (throttle == 0.0f) {
+    throttleRpm = 0.0f;
+    brakeCurrent = 0.0f;
+    brakeState = false;
     coasting = true;  
     ModuleConstants::vesc.updateAuto(0.0f, 0.0f);
     
     return;
   } else if (throttle > 0.0f) {
-    throttleRpm = (throttle / 100.0f) * 7500.0f; // map throttle 0-100 to 0 - maxRPM (7500 for old vescrpm,14800 new theoretical vesc)
+    throttleRpm = constrain(throttle, ControlConstants::vescMinERPM, ControlConstants::vescMaxERPM);
+    brakeCurrent = 0.0f;
     brakeState = false;
     coasting = false;
 
@@ -87,11 +107,11 @@ void CtrlVesc() {
 
 
 void CtrlOdrive() {
-  // Map steering (-100 to +100) to ODrive position range (-maxPos to +maxPos)
-  if (steering <-0.25f){
-    SteeringPos = (steering / 100.0f) * 2.25f; // map steering -100 to 0 to -maxPos to 0
+  // Map steering degrees to the existing ODrive turns command range.
+  if (steering < -0.25f) {
+    SteeringPos = (steering / ControlConstants::steeringMaxDegrees) * ControlConstants::steeringMaxTurns;
   } else if (steering > 0.25f) {
-    SteeringPos = (steering / 100.0f) * 2.25f; // map steering 0 to +100 to 0 to +maxPos
+    SteeringPos = (steering / ControlConstants::steeringMaxDegrees) * ControlConstants::steeringMaxTurns;
   } else {
     SteeringPos = 0.0f; // center position
   }
@@ -103,21 +123,21 @@ void CtrlOdrive() {
 void updateAutonomousMode() {
   std::string rawCommands = ModuleConstants::ethernet.receiveUDP();
 
+  if (!rawCommands.empty()) {
+    setControls(rawCommands);
+  }
+
+  CtrlVesc();
+  CtrlOdrive();
+
   Serial.print(" | Throttle(rpm): ");
   Serial.print(throttleRpm);
+  Serial.print(" steering(deg): ");
+  Serial.print(steering);
   Serial.print(" steering(turns): ");
   Serial.print(SteeringPos);
   Serial.print(" | Emergency: ");
   Serial.println(emergency ? "YES" : "NO");
   Serial.println(brakeState);
   Serial.println(coasting);
-
-
-  CtrlVesc();
-  CtrlOdrive();
-  ModuleConstants::ethernet.sendTelemetry();
-
-  if (!rawCommands.empty()) {
-    setControls(rawCommands);
-  }
 }

@@ -60,12 +60,17 @@ namespace MotorControls {
 
 
   void VescDriver::updateAuto(float erpm, float brake) {
-    if (brake > 0.0f) {
-      vesc.setBrakeCurrent(brake);
+    targetValues.erpmCommand = constrain(erpm, ControlConstants::vescMinERPM, ControlConstants::vescMaxERPM);
+    targetValues.brakeCommand = constrain(brake, ControlConstants::vescMinBrake, ControlConstants::vescMaxBrake);
+
+    if (targetValues.brakeCommand > 0.0f) {
+      targetValues.erpmCommand = 0.0f;
+      vesc.setBrakeCurrent(targetValues.brakeCommand);
       return;
     }
 
-    vesc.setRPM(erpm);
+    targetValues.brakeCommand = 0.0f;
+    vesc.setRPM(targetValues.erpmCommand);
   }
 
 
@@ -140,5 +145,23 @@ namespace MotorControls {
 
   VescValues VescDriver::getState() {
     return targetValues;
+  }
+
+
+  float VescDriver::getVoltage() {
+    if (vesc.getVescValues()) {
+      return vesc.data.inpVoltage;
+    }
+
+    return 0.0f;
+  }
+
+
+  float VescDriver::getCurrent() {
+    if (vesc.getVescValues()) {
+      return vesc.data.avgInputCurrent;
+    }
+
+    return 0.0f;
   }
 }
