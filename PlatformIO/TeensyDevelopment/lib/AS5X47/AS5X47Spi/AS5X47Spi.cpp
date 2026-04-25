@@ -36,10 +36,13 @@ using namespace Constants;
 // TODO: Put just a tiny bit of effort into modifiy the library so it takes in
 // an SPI bus.
 AS5X47Spi::AS5X47Spi(uint8_t _chipSelectPin) {
-	// Initialize SPI1 Communication
+	// Initialize drive encoder SPI communication
 	chipSelectPin = _chipSelectPin;
 	pinMode(chipSelectPin, OUTPUT);
 	digitalWrite(chipSelectPin, HIGH);
+	IOConstants::driveEncoderSPI.setMISO(IOConstants::driveEncoderMISO);
+	IOConstants::driveEncoderSPI.setMOSI(IOConstants::driveEncoderMOSI);
+	IOConstants::driveEncoderSPI.setSCK(IOConstants::driveEncoderSCK);
 	IOConstants::driveEncoderSPI.begin();
 }
 

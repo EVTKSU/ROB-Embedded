@@ -125,7 +125,8 @@ void updateAutonomousMode() {
     ModuleConstants::vesc.getCurrent(),
     ModuleConstants::odrive.getTarget(),
     ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false),
-    ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false)
+    ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false),
+    ModuleConstants::driveEncoder.getPosition()
   );
 
   if (!rawCommands.empty()) {

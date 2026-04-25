@@ -3,6 +3,7 @@
 
 #include <SPI.h>
 #include <cstdio>
+#include <cstring>
 #include <sstream>
 #include <vector>
 #include <cstdlib>
@@ -13,12 +14,16 @@ using namespace Constants;
 namespace Signals {
   void EthernetEVT::setupUDP() {
     if (Serial) {
-      Serial.println("Initializing UDP telemetry");
+      Serial.println("Initializing UDP Ethernet");
     }
 
-    // Begin Ethernet communication to the Latte Panda Sigma  
+    // Begin Ethernet communication to the Latte Panda Sigma.
     Ethernet.begin(mac, teensyIP);
-    udp.begin(8888);
+
+    // One UDP object is used for both:
+    //   RX autonomous command packets on autoPort
+    //   TX telemetry packets to pandaIP:telemPort
+    udp.begin(autoPort);
 
     if (Serial) {
       if (Ethernet.hardwareStatus() == EthernetNoHardware) {
@@ -32,59 +37,110 @@ namespace Signals {
       } else {
         Serial.println("Ethernet cable is not connected");
       }
-    } 
+
+      Serial.print("Teensy IP: ");
+      Serial.println(Ethernet.localIP());
+
+      Serial.print("Listening for autonomous UDP commands on port ");
+      Serial.println(autoPort);
+
+      Serial.print("Sending telemetry to ");
+      Serial.print(pandaIP);
+      Serial.print(":");
+      Serial.println(telemPort);
+    }
   }
 
 
-  void EthernetEVT::sendTelemetry(bool error, const char * state, float rpm, float steering, float oDrvVolt, float vescVolt, float oDrvCurr, float vescCurr, float oDrvTarget, uint16_t steer, uint16_t throttle) {
-    // Write the necessary values to the packet 
+  void EthernetEVT::sendTelemetry(
+    bool error,
+    const char * state,
+    float rpm,
+    float steering,
+    float oDrvVolt,
+    float vescVolt,
+    float oDrvCurr,
+    float vescCurr,
+    float oDrvTarget,
+    uint16_t steer,
+    uint16_t throttle,
+    double driveEncoderPosition
+  ) {
     snprintf(
-      telemetryBuffer,                                         // Packet to be written
-      sizeof(telemetryBuffer),                                 // Size of the allowed packet 
-      "%d,%s,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%d,%d", // Formatted packet string
-      error,                                                   // Emergency flag
-      state,                                                   // Current State
-      rpm,                                                     // VESC RPM target
-      steering,                                                // ODrive position
-      oDrvVolt,                                                // ODrive voltage
-      vescVolt,                                                // VESC voltage
-      oDrvCurr,                                                // ODrive current
-      vescCurr,                                                // VESC current 
-      oDrvTarget,                                              // Target steering position
-      steer,                                                   // RC steering input position
-      throttle                                                 // RC throttle input ERPM
+      telemetryBuffer,
+      sizeof(telemetryBuffer),
+      "%d,%s,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%d,%d,%0.4f",
+      error,
+      state,
+      rpm,
+      steering,
+      oDrvVolt,
+      vescVolt,
+      oDrvCurr,
+      vescCurr,
+      oDrvTarget,
+      steer,
+      throttle,
+      driveEncoderPosition
     );
 
-    // Prints the telemetry packet to the Serial Monitor 
+    // Print the telemetry packet to the Serial Monitor.
     if (Serial && IOConstants::telemetryToSerial) {
       Serial.println(telemetryBuffer);
     }
 
-    // Write the telemetry packet from the Teensy 4.1 to the Latte Panda Sigma 
+    // Write the telemetry packet from the Teensy 4.1 to the Latte Panda Sigma.
     udp.beginPacket(pandaIP, telemPort);
-    udp.write(telemetryBuffer);
+    udp.write(
+      reinterpret_cast<const uint8_t *>(telemetryBuffer),
+      strlen(telemetryBuffer)
+    );
     udp.endPacket();
   }
 
 
   std::string EthernetEVT::receiveUDP() {
-    if (udp.parsePacket() > 0) {
-      // Add a stop bit to the packet 
-      if (udp.read(autoBuffer, sizeof(autoBuffer - 1)) > 0) {
-        autoBuffer[udp.read(autoBuffer, sizeof(autoBuffer - 1))] = '\0';
-      }
+    int packetSize = udp.parsePacket();
 
-      // Print the received packet to the Serial Monitor
-      if (Serial && IOConstants::telemetryToSerial) {
-        Serial.print("Received Packet: ");
-        Serial.println(autoBuffer);
-      }
-
-      // Return the received packet 
-      return std::string(autoBuffer);
+    if (packetSize <= 0) {
+      return std::string();
     }
 
-    // Return an empty string if no packet is received 
-    return std::string();
+    // Read the UDP datagram once into the full buffer.
+    // Leave one byte open for the null terminator.
+    int len = udp.read(autoBuffer, sizeof(autoBuffer) - 1);
+
+    if (len <= 0) {
+      autoBuffer[0] = '\0';
+
+      if (Serial && IOConstants::telemetryToSerial) {
+        Serial.println("Received empty UDP packet");
+      }
+
+      return std::string();
+    }
+
+    autoBuffer[len] = '\0';
+
+    // If a packet is somehow longer than autoBuffer, drain the leftover bytes.
+    while (udp.available() > 0) {
+      udp.read();
+    }
+
+    // Strip newline / carriage return if a sender includes them.
+    for (int i = 0; i < len; i++) {
+      if (autoBuffer[i] == '\r' || autoBuffer[i] == '\n') {
+        autoBuffer[i] = '\0';
+        break;
+      }
+    }
+
+    // Print the received packet to the Serial Monitor.
+    if (Serial && IOConstants::telemetryToSerial) {
+      Serial.print("Received Packet: ");
+      Serial.println(autoBuffer);
+    }
+
+    return std::string(autoBuffer);
   }
 }

@@ -184,6 +184,9 @@ void loop() {
       return;
     }
 
+    // Updates the drive encoder position accumulator
+    ModuleConstants::driveEncoder.feed();
+
     // Runs the current state of the state machine 
     ModuleConstants::stateMachine.runState();
 
@@ -205,7 +208,8 @@ void loop() {
       ModuleConstants::vesc.getCurrent(),
       ModuleConstants::odrive.getTarget(),
       ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false),
-      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false)
+      ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false),
+      ModuleConstants::driveEncoder.getPosition()
     );
 
     // Records the last telemetry timestamp

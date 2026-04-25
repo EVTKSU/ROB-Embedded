@@ -37,19 +37,20 @@ namespace Constants {
     static const int greenLedRelay = 22;
     static const int redLedRelay = 23;
 
-    static const int fanPin = 29;
+    static const int fanPin = 29; // PWM-capable; Serial7 TX is unused for SBUS
 
-	inline static constexpr uint8_t driveEncoderCS = 0;
-	inline static constexpr uint8_t driveEncoderMISO = 1;
-	inline static constexpr uint8_t driveEncoderMOSI = 26;
-	inline static constexpr uint8_t driveEncoderSCK = 27;
+	inline static constexpr uint8_t driveEncoderCS = 0;    // SPI1 CS
+	inline static constexpr uint8_t driveEncoderMISO = 1;  // SPI1 MISO
+	inline static constexpr uint8_t driveEncoderMOSI = 26; // SPI1 MOSI
+	inline static constexpr uint8_t driveEncoderSCK = 27;  // SPI1 SCK
 
-    static constexpr double updateFrequency = 50.0;
+    static constexpr double updateFrequency = 60.0;
     static constexpr double ledBlinkFrequency = 1.0;
-    static constexpr double telemetryFrequency = 1.0;
-    static constexpr double printSerialFrequency = 1.0;
+    static constexpr double telemetryFrequency = 5.0;
+    static constexpr double printSerialFrequency = 10.0;
 
-    static const bool telemetryToSerial = false;
+
+    static const bool telemetryToSerial = true;
     static const bool motorDataToSerial = true;
 
     static const unsigned long serialBaudrate = 9'600UL;
@@ -57,7 +58,7 @@ namespace Constants {
     static const unsigned long oDriveBaudrate = 115'200UL;
     static const unsigned long vescBaudrate = 115'200UL;
 
-    static constexpr HardwareSerial & sBusSerial = Serial1;   // UART used for the RC receiver
+    static constexpr HardwareSerial & sBusSerial = Serial7;   // UART used for the RC receiver
     static constexpr HardwareSerial & oDriveSerial = Serial6; // UART used for the ODrive
     static constexpr HardwareSerial & vescSerial = Serial2;   // UART used for the VESC
 	

@@ -1,16 +1,13 @@
-#ifndef EVT_TELEMETRY_H
-#define EVT_TELEMETRY_H
+#ifndef EVT_ETHERNET_H
+#define EVT_ETHERNET_H
 
 /*-----------------------------------------------------------------------------*/
 /** 
  * @file   EVT_Ethernet.hpp
  * @brief  Header for EthernetEVT class
  * 
- * The EthernetEVT class is used to both send and receive telemetry packets 
- * between the Teensy 4.1 and the Latte Panda Sigma 
- * 
- * @author Nyx Turbeville
- * @date   April 20, 2026
+ * The EthernetEVT class is used to both send and receive UDP packets 
+ * between the Teensy 4.1 and the Latte Panda Sigma.
 *//*---------------------------------------------------------------------------*/
 
 #include <Arduino.h>
@@ -24,27 +21,26 @@ namespace Signals {
    */
   class EthernetEVT {
     private:
-      EthernetUDP udp; // Ethernet class instance used to send and receive packets
+      EthernetUDP udp; // One UDP socket used for both RX commands and TX telemetry
 
       IPAddress teensyIP {192, 168, 0, 177};              // Teensy 4.1 IP address 
       IPAddress pandaIP  {192, 168, 0, 121};              // Latte Panda Sigma IP address
-      byte mac[6] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}; // Latte Panda Sigma MAC address 
+      byte mac[6] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}; // Teensy Ethernet MAC address 
 
-      char autoBuffer[256];      // Telemetry packet buffer from Latte Panda Sigma 
+      char autoBuffer[256];      // UDP command packet buffer from Latte Panda Sigma 
       char telemetryBuffer[256]; // Telemetry packet buffer from Teensy 4.1
 
-      uint16_t telemPort = 5005; // Telemetry UDP port 
+      uint16_t autoPort = 8888;  // Autonomous command RX port
+      uint16_t telemPort = 5005; // Telemetry TX port
+
     public:
       /**
-       * @brief Sets up the UDP telemetry
-       * 
-       * @note Blocks the code from continuing until the ethernet is connected 
+       * @brief Sets up UDP Ethernet.
        */
       void setupUDP();
 
-
       /**
-       * @brief Sends the telemetry packet
+       * @brief Sends the telemetry packet.
        * 
        * @param error Boolean to denote an error in the low level 
        * @param state Current state of the State Machine
@@ -57,17 +53,33 @@ namespace Signals {
        * @param oDrvTarget ODrive target position 
        * @param steer RC steering input
        * @param throttle RC throttle input
+       * @param driveEncoderPosition Drive encoder position in rotations
        */
-      void sendTelemetry(bool error, const char * state, float rpm, float steering, float oDrvVolt, float vescVolt, float oDrvCurr, float vescCurr, float oDrvTarget, uint16_t steer, uint16_t throttle);
-
+      void sendTelemetry(
+        bool error,
+        const char * state,
+        float rpm,
+        float steering,
+        float oDrvVolt,
+        float vescVolt,
+        float oDrvCurr,
+        float vescCurr,
+        float oDrvTarget,
+        uint16_t steer,
+        uint16_t throttle,
+        double driveEncoderPosition
+      );
 
       /**
-       * @brief Gets the telemetry packet from the Panda as a string 
+       * @brief Gets an autonomous command packet from the Panda as a string.
        * 
-       * @return The formatted telemetry packet 
+       * Expected autonomous command format:
+       * rpm,steering_angle,brake_current,emergency_flag
+       * 
+       * @return The received command packet, or empty string if no packet exists.
        */
       std::string receiveUDP();
   };
 }
 
-#endif // EVT_TELEMETRY_H
+#endif // EVT_ETHERNET_H
