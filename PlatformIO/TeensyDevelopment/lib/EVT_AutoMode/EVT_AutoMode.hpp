@@ -28,15 +28,14 @@ namespace Signals {
    */
   class AutoDriver {
     private:
-      double vescRPM;          // VESC RPM setting
+      double vescERPM;         // VESC ERPM setting
       double brakeCurrent;     // Brake current in amps
-      double brakePercent;     // Brake current as a percentage 
 
       double steeringAngle;    // Steering angle in degrees
 
       bool emergencyFlag;      // Condition to tell if an error occured
 
-      const int numFields = 4; // Number of expected fields in the UDP packet
+      const int numFields = 3; // Number of expected fields in the UDP packet
       char udpBuffer[128];     // Copy of the received UDP data
       char * token;         
       int index; 
@@ -44,7 +43,7 @@ namespace Signals {
       /**
        * @brief Updates the autonomous commands given a UDP packet
        * 
-       * @note The expected format is "throttle,steering,brake,emergency"
+       * @note The expected format is "erpm,steering_degrees,emergency"
        * 
        * @param udpData UDP packet to parse and use for updates 
        */
@@ -64,10 +63,10 @@ namespace Signals {
       /**
        * @brief Updates the VESC throttle controls in AUTO mode 
        * 
-       * @param rpm RPM value to run 
+       * @param erpm ERPM value to run 
        * @param current Brake current measured in amps
        */
-      void updateVESC(float rpm, float current);
+      void updateVESC(float erpm, float current);
   };
 }
 

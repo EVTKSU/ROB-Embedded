@@ -138,8 +138,8 @@ void updateAutonomousMode() {
 namespace Signals {
   void AutoDriver::updateAuto(const std::string & udpData) {
     if (!udpData.empty()) { // Update the UDP data if the packet isn't an empty string
-      strncpy(udpBuffer, udpData.c_str(), sizeof(udpData) - 1);
-      udpBuffer[sizeof(udpData) - 1] = '\0';
+      strncpy(udpBuffer, udpData.c_str(), sizeof(udpBuffer) - 1);
+      udpBuffer[sizeof(udpBuffer) - 1] = '\0';
 
       token = strtok(udpBuffer, ",");
       index = 0;
@@ -147,15 +147,16 @@ namespace Signals {
       while (token != nullptr) {
         switch (index) {
           case 0:
-            vescRPM = atof(token);
+            vescERPM = atof(token);
             break;
           case 1:
-            steeringAngle = atof(token);
+            steeringAngle = constrain(
+              atof(token),
+              -ControlConstants::steeringMaxDegrees,
+              ControlConstants::steeringMaxDegrees
+            );
             break;
           case 2:
-            brakeCurrent = atof(token);
-            break;
-          case 3:
             emergencyFlag = (atoi(token) != 0);
             break;
         }
@@ -174,12 +175,22 @@ namespace Signals {
             Serial.println("Emergency Flag encountered");
           }
   
-          updateVESC(0.0f, 0.0f);
+          updateVESC(0.0f, 20.0f);
 
           ModuleConstants::stateMachine.setErrorState();
         } else { // Update the ODrive and VESC if no error occurs 
           updateODrive(steeringAngle);
-          updateVESC(vescRPM, brakeCurrent);
+          if (vescERPM < 0.0f) {
+            brakeCurrent = constrain(
+              (-vescERPM / ControlConstants::vescMaxERPM) * ControlConstants::vescMaxBrake,
+              ControlConstants::vescMinBrake,
+              ControlConstants::vescMaxBrake
+            );
+            updateVESC(0.0f, brakeCurrent);
+          } else {
+            brakeCurrent = 0.0f;
+            updateVESC(vescERPM, 0.0f);
+          }
         }
       }
     } else { // Print a warning to the Serial Monitor if the UDP packet is empty
@@ -191,20 +202,19 @@ namespace Signals {
 
 
   void AutoDriver::updateODrive(float steeringAngle) {
-    // Map the steering angle of the ODrive to a position 
-    ModuleConstants::odrive.updateAuto(map(
-      steeringAngle, 
-      (-ControlConstants::oDriveMaxTurns * ConversionConstants::turnsToDeg * ControlConstants::oDriveGearRatio),
-      (ControlConstants::oDriveMaxTurns * ConversionConstants::turnsToDeg * ControlConstants::oDriveGearRatio),
-      -ControlConstants::oDriveMaxTurns,
-      ControlConstants::oDriveMaxTurns
-    ));
+    float steeringTurns = 0.0f;
+
+    if (steeringAngle < -0.25f || steeringAngle > 0.25f) {
+      steeringTurns = (steeringAngle / ControlConstants::steeringMaxDegrees) * ControlConstants::steeringMaxTurns;
+    }
+
+    ModuleConstants::odrive.updateAuto(steeringTurns);
   }
 
 
-  void AutoDriver::updateVESC(float rpm, float current) {
+  void AutoDriver::updateVESC(float erpm, float current) {
     ModuleConstants::vesc.updateAuto(
-      (rpm * ControlConstants::vescPolePairs), 
+      constrain(erpm, ControlConstants::vescMinERPM, ControlConstants::vescMaxERPM), 
       current
     );
   }

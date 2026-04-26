@@ -47,6 +47,9 @@ namespace Constants {
     static constexpr float oDriveSteeringInputLimit = 50.0f; // Steering rate limit for the ODrive input
 
     static constexpr float oDriveGearRatio = (1.0 / 20.0);
+
+    static constexpr float steeringMaxDegrees = 37.8f;
+    static constexpr float steeringMaxTurns = 2.25f;
   };
 }
 
