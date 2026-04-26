@@ -34,8 +34,10 @@ namespace Signals {
       double steeringAngle;    // Steering angle in degrees
 
       bool emergencyFlag;      // Condition to tell if an error occured
+      bool holdStateActive;    // Neutral command when remote state requests hold/manual
+      std::string commandState;// State text from UDP packet when present
 
-      const int numFields = 3; // Number of expected fields in the UDP packet
+      const int numFields = 4; // Packet: "erpm,steering_degrees,emergency,state"
       char udpBuffer[128];     // Copy of the received UDP data
       char * token;         
       int index; 
@@ -43,7 +45,7 @@ namespace Signals {
       /**
        * @brief Updates the autonomous commands given a UDP packet
        * 
-       * @note The expected format is "erpm,steering_degrees,emergency"
+       * @note Expected format is "erpm,steering_degrees,emergency,state"
        * 
        * @param udpData UDP packet to parse and use for updates 
        */

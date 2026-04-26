@@ -1,5 +1,7 @@
 
 #include <SPI.h>
+#include <algorithm>
+#include <cctype>
 #include <sstream>
 
 #include <EVT_AutoMode.hpp>
@@ -8,9 +10,11 @@
 #include "ModuleConstants.hpp"
 using namespace Constants;
 
-// IN AUTO MODE, THERE IS NO REVERSE. REVERSE BRAKES IN THIS CASE.
+// Legacy helper path below predates the current AutoDriver runtime path.
+// main.cpp uses ModuleConstants::autoDriver.updateAuto(), not updateAutonomousMode().
+// Keep these helpers only as reference until old path is removed.
 
-// Global variables for UDP control data
+// Legacy globals for deprecated helper path
 float erpm = 0.0;
 float throttle = 0.0;
 float steering = 0.0;
@@ -21,8 +25,8 @@ bool emergency = false;
 bool brakeState = false;
 bool coasting = false;
 
-// Function to parse UDP data and update control variables
-// Expected format: "throttle,steering,emergency"
+// Legacy parser for deprecated helper path
+// Expected format: "throttle_pct,steering_pct,emergency"
 void setControls(const std::string &udpData) {
   // Copy string to modifiable buffer
   char udpCopy[128];
@@ -50,7 +54,7 @@ void setControls(const std::string &udpData) {
   }
 
   if (index < 3) {
-    Serial.print("Malformed control packet (expected 3 fields): ");
+    Serial.print("Malformed legacy control packet (expected 3 fields): ");
     Serial.println(udpData.c_str());
   }
 }
@@ -100,6 +104,8 @@ void CtrlOdrive() {
 
 
 void updateAutonomousMode() {
+  // Deprecated helper path. Current firmware path is AutoDriver::updateAuto()
+  // with packet format "erpm,steering_degrees,emergency,state".
   std::string rawCommands = ModuleConstants::ethernet.receiveUDP();
 
   Serial.print(" | Throttle(rpm): ");
@@ -136,11 +142,37 @@ void updateAutonomousMode() {
 
 
 namespace Signals {
+  namespace {
+    std::string normalizeState(const char * rawState) {
+      std::string normalized = rawState == nullptr ? "" : std::string(rawState);
+      std::transform(
+        normalized.begin(),
+        normalized.end(),
+        normalized.begin(),
+        [] (unsigned char c) { return static_cast<char>(std::toupper(c)); }
+      );
+      return normalized;
+    }
+
+    bool stateRequestsEstop(const std::string & state) {
+      return state == "ESTOP" || state == "E-STOP" || state == "EMERGENCY_STOP";
+    }
+
+    bool stateRequestsHold(const std::string & state) {
+      return state == "HOLD" || state == "MANUAL" || state == "IDLE" || state == "RC" || state == "STOP";
+    }
+  }
+
   void AutoDriver::updateAuto(const std::string & udpData) {
     if (!udpData.empty()) { // Update the UDP data if the packet isn't an empty string
       strncpy(udpBuffer, udpData.c_str(), sizeof(udpBuffer) - 1);
       udpBuffer[sizeof(udpBuffer) - 1] = '\0';
 
+      vescERPM = 0.0;
+      steeringAngle = 0.0;
+      emergencyFlag = false;
+      holdStateActive = false;
+      commandState.clear();
       token = strtok(udpBuffer, ",");
       index = 0;
 
@@ -159,6 +191,9 @@ namespace Signals {
           case 2:
             emergencyFlag = (atoi(token) != 0);
             break;
+          case 3:
+            commandState = normalizeState(token);
+            break;
         }
 
         token = strtok(nullptr, ",");
@@ -166,18 +201,32 @@ namespace Signals {
       }
 
 
-      if (index < numFields) { // Skips updating values if a malformed packet is received
+      if (index != numFields) { // Skip malformed packets
         Serial.printf("Malformed control packet (expected %d fields): ", numFields);
         Serial.println(udpData.c_str());
       } else {
+        if (!commandState.empty()) {
+          holdStateActive = stateRequestsHold(commandState);
+          emergencyFlag = emergencyFlag || stateRequestsEstop(commandState);
+        }
+
         if (emergencyFlag) { // Stop the VESC and go into error state if an error occurs 
           if (Serial) {
             Serial.println("Emergency Flag encountered");
           }
   
           updateVESC(0.0f, 20.0f);
+          updateODrive(0.0f);
 
           ModuleConstants::stateMachine.setErrorState();
+        } else if (holdStateActive) {
+          if (Serial) {
+            Serial.print("Remote hold state: ");
+            Serial.println(commandState.c_str());
+          }
+
+          updateODrive(0.0f);
+          updateVESC(0.0f, 0.0f);
         } else { // Update the ODrive and VESC if no error occurs 
           updateODrive(steeringAngle);
           if (vescERPM < 0.0f) {

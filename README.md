@@ -59,21 +59,22 @@ The **TeensyDevelopment** folder is a stand‑alone PlatformIO project.
 | Enum State | Purpose |
 |------------|---------|
 | `NONE`     | Pre‑boot / undefined |
-| `INIT`     | Hardware bring‑up (Ethernet, drivers) |
-| `CALIB`    | ODrive calibration sequence |
+| `IDLE`     | Ready / waiting for operator |
 | `RC`       | Manual remote‑control mode |
 | `AUTO`     | Autonomous mode running UDP commands |
-| `ERR`      | Fatal error – motors stopped, requires user reset |
+| `ERROR`    | Fatal error – motors stopped, requires user reset |
+| `STOP`     | Reserved stop state |
+| `RESET`    | ODrive reset / recovery state |
 
-Modules call `SetState()` or `SetErrorState()` to transition. `StateToString()` converts the enum to a printable string.
+Modules call `setState()` or `setErrorState()` to transition. `toString()` converts the enum to a printable string.
 
 ---
 
 ### Ethernet and Telemetry EVT_Ethernet
 
 * Initializes **NativeEthernet** and a global `EthernetUDP Udp` object.  
-* `sendTelemetry()` — formats six floats and broadcasts to `192.168.0.132:8888`.  
-* `receiveUdp()` — non‑blocking; returns a `std::string` packet or empty.
+* `sendTelemetry()` — sends CSV telemetry to panda host on UDP port `8888`.  
+* `receiveUDP()` — non‑blocking; returns a `std::string` packet or empty.
 
 ---
 
@@ -105,25 +106,25 @@ Modules call `SetState()` or `SetErrorState()` to transition. `StateToString()` 
 
 ### Autonomous Mode EVT_AutoMode
 
-* Polls UDP for commands: `steering,throttle,emergency`.  
-* On entry, captures current ODrive pos as center.  
-* Maps throttle % to RPM and holds steering center while `emergency==0`.  
-* If `emergency == true` ➜ calls `SetErrorState()`.
+* Main runtime path is `ModuleConstants::autoDriver.updateAuto(ModuleConstants::ethernet.receiveUDP())`.
+* Expected UDP packet is exactly `erpm,steering_degrees,emergency,state`.
+* Remote `state` values `ESTOP` / `E-STOP` / `EMERGENCY_STOP` force error stop.
+* Remote `state` values `HOLD` / `MANUAL` / `IDLE` / `RC` / `STOP` command neutral steering + neutral drive.
 
 ---
 
 ## Runtime Flow
 
 1. **setup()**  
-   * `SetState(INIT)` ⟶ Ethernet / SBUS / driver initialization.  
-   * `SetState(RC)` – ready for manual driving.
+   * Initializes ODrive + Ethernet bringup.  
+   * `setState(IDLE)` – ready for manual driving.
 
 2. **loop()**  
    * Always refresh SBUS.  
-   * `switch(GetState())`  
+   * Runs current state handler  
      * **RC** – if `channels[6] > 1000` ➜ `AUTO`, else run VESC & ODrive updates.  
      * **AUTO** – if `channels[6] < 1000` ➜ back to `RC`; otherwise run UDP autonomous routine.  
-     * **ERR** – wait for operator reset (`channels[4]` high with auto switch low).  
+     * **ERROR** – wait for operator reset via `SWH`.  
 
 3. **Telemetry** – autonomous loop always sends telemetry; RC loop can be extended later.
 
@@ -132,7 +133,7 @@ Modules call `SetState()` or `SetErrorState()` to transition. `StateToString()` 
 ## Extending the Code Base
 
 * **New module?** Create `lib/EVT_MyModule/` with `EVT_MyModule.h` / `EVT_MyModule.cpp`.  
-* **Error handling** – call `SetErrorState("Module","Reason")`.  
+* **Error handling** – call `setErrorState()`.  
 * **Documentation** – each library needs a `README.md` explaining its API.  
 * **Branches** – develop on a new Git branch; open PRs for review.
 

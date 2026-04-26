@@ -46,7 +46,7 @@ namespace Signals {
 
 
   void StateMachine::setErrorState() {
-    
+    setState(States::ERROR);
   }
 
 
