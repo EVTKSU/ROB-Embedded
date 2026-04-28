@@ -254,7 +254,7 @@ namespace Signals {
     float steeringTurns = 0.0f;
 
     if (steeringAngle < -0.25f || steeringAngle > 0.25f) {
-      steeringTurns = (steeringAngle / ControlConstants::steeringMaxDegrees) * ControlConstants::steeringMaxTurns;
+      steeringTurns = (steeringAngle / ControlConstants::steeringMaxDegrees) * ControlConstants::oDriveMaxTurns;
     }
 
     ModuleConstants::odrive.updateAuto(steeringTurns);

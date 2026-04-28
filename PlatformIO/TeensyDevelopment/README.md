@@ -79,7 +79,7 @@ Modules call `setState()` or `setErrorState()` to transition. `toString()` conve
 
 ### RC Interface EVT_RC
 
-* Uses **SBUS** on `Serial2` @ 100 kBd.  
+* Uses **SBUS** on `Serial7` @ 100 kBd.  
 * Exposes `uint16_t channels[10]` array.  
 * `updateSbusData()` refreshes the channel buffer – called every loop.
 
@@ -131,8 +131,8 @@ Modules call `setState()` or `setErrorState()` to transition. `toString()` conve
 
 ## Extending the Code Base
 
-* **New module?** Create `lib/EVT_MyModule/` with `EVT_MyModule.h` / `EVT_MyModule.cpp`.  
-* **Error handling** – call `setErrorState()`.  
+* **New module?** Create `lib/EVT_MyModule/` with `EVT_MyModule.hpp` / `EVT_MyModule.cpp`.  
+* **Error handling** – call `ModuleConstants::stateMachine.setErrorState()`.  
 * **Documentation** – each library needs a `README.md` explaining its API.  
 * **Branches** – develop on a new Git branch; open PRs for review.
 
@@ -145,7 +145,7 @@ Modules call `setState()` or `setErrorState()` to transition. `toString()` conve
 | **“multiple definition of operator new”** | Add `-Wl,--allow-multiple-definition` to `build_flags` in `platformio.ini`. |
 | **Ethernet packet cut at 36 B** | Increase `UDP_TX_PACKET_MAX_SIZE` to 64 in Teensy **NativeEthernet** core. |
 | **State machine keeps breaking** | Follow enum + `switch` template in `main.cpp`; keep module code non‑blocking. |
-| **No SBUS data** | Confirm `Serial2` wiring and 100 kBd 8E2 settings. |
+| **No SBUS data** | Confirm `Serial7` wiring and 100 kBd 8E2 settings. |
 | **ODrive never reaches CLOSED_LOOP** | Check power, hall/encoder cables, and run calibration trigger (`channels[5]`). |
 
 ---

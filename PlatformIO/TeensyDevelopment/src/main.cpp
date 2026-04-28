@@ -1,20 +1,16 @@
 #include <Arduino.h>
 
-#include <EVT_AutoMode.hpp>
-#include <EVT_Ethernet.hpp>
-#include <EVT_RC.hpp>
-
 #include "TransmitterConstants.hpp"
 #include "ConversionConstants.hpp"
 #include "ModuleConstants.hpp"
 #include "IOConstants.hpp"
 using namespace Constants;
 
-unsigned long currentTime = 0UL;      // Current timestamp in milliseconds
-unsigned long lastUpdate = 0UL;       // Timestamp in milliseconds of the last attempted update to all values 
-unsigned long lastWaitingPrint = 0UL; // Timestamp in milliseconds of the last serial output denoting a bad frame
-unsigned long lastPrintMessage = 0UL; // Timestamp in milliseconds of the last serial output
-unsigned long lastTelem = 0UL;        // Timestamp in milliseconds of the last telemetry packet
+size_t currentTime = 0;      // Current timestamp in milliseconds
+size_t lastUpdate = 0;       // Timestamp in milliseconds of the last attempted update to all values 
+size_t lastWaitingPrint = 0; // Timestamp in milliseconds of the last serial output denoting a bad frame
+size_t lastPrintMessage = 0; // Timestamp in milliseconds of the last serial output
+size_t lastTelem = 0;        // Timestamp in milliseconds of the last telemetry packet
 
 bool ledState = false; // Current state of the on board LED
 
@@ -38,8 +34,8 @@ void setup() {
 
   // Sets the behavior of the NONE state 
   ModuleConstants::stateMachine.defineState(Signals::States::NONE, [&] () {
-    // Set the LED beacon to solid yellow
-    ModuleConstants::light.setColorState(IOConstants::yellow);
+    // Blink the LED beacon yellow with a 2.0 second period
+    ModuleConstants::light.setColorState(IOConstants::yellow, true, 2.0f);
 
     if ((currentTime - lastUpdate) >= (ConversionConstants::secToMillis / (2 * IOConstants::ledBlinkFrequency))) {
       digitalWrite(IOConstants::ledBuiltIn, ledState = !ledState ? HIGH : LOW);
@@ -48,8 +44,8 @@ void setup() {
 
   // Sets the behavior of the IDLE state
   ModuleConstants::stateMachine.defineState(Signals::States::IDLE, [&] () {
-    // Blink the LED beacon yellow with a 2.0 second period
-    ModuleConstants::light.setColorState(IOConstants::yellow, true, 2.0f);
+    // Set the LED beacon to solid yellow
+    ModuleConstants::light.setColorState(IOConstants::yellow);
 
     if (ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWF, Signals::ControlRC::mapSwitches) && !ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWH, Signals::ControlRC::mapSwitches)) {
       // Turn off the LED beacon and go into RC state 
@@ -73,7 +69,7 @@ void setup() {
       ModuleConstants::stateMachine.setState(Signals::States::RESET);
     } else {
       // Print a message to the Serial Monitor if ODrive hasn't been initialized 
-      if (!ModuleConstants::odrive.isCalibrated()) {
+      if (Serial && !ModuleConstants::odrive.isCalibrated()) {
         Serial.println("ODrive not yet calibrated");
       }
 
@@ -81,7 +77,7 @@ void setup() {
       ModuleConstants::odrive.updateRC();
       ModuleConstants::vesc.updateRC(ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false));
 
-      if (IOConstants::motorDataToSerial) {
+      if (Serial && IOConstants::motorDataToSerial) {
         // Print the Current values the car is trying to achieve 
         Serial.printf("Steering - %.3f\t| ", ModuleConstants::odrive.getTarget());
         ModuleConstants::vesc.printState();
@@ -161,9 +157,6 @@ void setup() {
 
   // Set the car into idle state
   ModuleConstants::stateMachine.setState(Signals::States::IDLE);
-
-  // Get the current time in milliseconds for timing
-  currentTime = millis();
 }
 
 
@@ -171,6 +164,9 @@ void setup() {
  * @brief Code to run continusously on runtime
  */
 void loop() {
+  // Records the current timestamp
+  currentTime = millis();
+
   // Limits the update frequency so that the Teensy doesn't get overloaded
   if ((currentTime - lastUpdate) >= (ConversionConstants::secToMillis / IOConstants::updateFrequency)) {
     // Skips the loop if the SBUS gets a bad frame 
@@ -215,7 +211,4 @@ void loop() {
     // Records the last telemetry timestamp
     lastTelem = millis();
   }
-
-  // Records the current timestamp
-  currentTime = millis();
 }

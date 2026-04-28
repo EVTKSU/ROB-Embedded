@@ -27,7 +27,7 @@ namespace Modules {
   /**
    * @brief Units of temperature to recieve from the senors
    */
-  enum temperatureUnits {
+  enum temperatureUnits : uint8_t {
     celcius = 0,
     fahrenheit
   };
@@ -49,7 +49,6 @@ namespace Modules {
 
       static constexpr double minSpeedScale = 0.20; // Minimum speed percentage for the fan
       static const int minPWM = maxPWM * minSpeedScale;
-
     public:
       /**
        * @brief Define a new fan controller 

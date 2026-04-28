@@ -42,13 +42,12 @@ namespace MotorControls {
 
       uint16_t throttleChannel; // Value from the RC channel used for the VESC commands
 
-      VescValues targetValues = {0, 0}; // Output values to VESC
+      VescValues targetValues {0, 0}; // Output values to VESC
 
       SlewRateLimiter rpmLimit {ControlConstants::vescERPMLimit};
 
       String vescDebug;         // VESC debug message as a string 
       String vescErrorString;   // VESC error message as a string
-
     public:
       /**
        * @brief Initializes UART communication between teensy and VESC

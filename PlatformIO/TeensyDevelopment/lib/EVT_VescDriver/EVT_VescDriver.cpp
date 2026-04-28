@@ -13,10 +13,6 @@ namespace MotorControls {
 
 
   void VescDriver::updateRC(uint16_t throttleChannel) {
-    /**
-     * TODO:
-     *   - Throw error when reaching the else
-    **/
     if (throttleChannel <= TransmitterConstants::deadbandBounds[1] && throttleChannel >= TransmitterConstants::deadbandBounds[0]) {
       targetValues.brakeCommand = 0.0f;
       targetValues.erpmCommand = 0.0f;
@@ -48,7 +44,7 @@ namespace MotorControls {
         ControlConstants::vescMaxERPM
       );
 
-      vesc.setRPM(targetValues.erpmCommand);
+      vesc.setRPM(rpmLimit.calculate(targetValues.erpmCommand));
     } else {
       Serial.println("Bad Value");
     }

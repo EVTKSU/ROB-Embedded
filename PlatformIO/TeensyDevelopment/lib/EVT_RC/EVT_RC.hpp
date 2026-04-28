@@ -67,7 +67,6 @@ namespace Signals {
 
       bool sBusFailsafe = false;
       bool sBusLostFrame = false;
-
     public:
       /**
        * @brief Enum used for selection of mapping values 

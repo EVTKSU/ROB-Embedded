@@ -1,30 +1,53 @@
-#pragma once
+#ifndef DRIVE_ENCODER
+#define DRIVE_ENCODER
+
+/*-----------------------------------------------------------------------------*/
+/** 
+ * @file   ModuleConstants.hpp
+ * @brief  Header for ModuleConstants struct 
+ * 
+ * The ModuleConstants struct is used for the definition of various constants 
+ * that are used throughout the entire codebase for module drivers
+ * 
+ * @author Austin Sheppard
+ * @date   March 18, 2026
+*//*---------------------------------------------------------------------------*/
 
 #include <AS5X47.h>
 
 #include <IOConstants.hpp>
 
-// TODO: Implement velocity filter. IDK how reliable to real time thing is rn.
-class DriveEncoder {
+namespace MotorControls {
+	// TODO: Implement velocity filter. IDK how reliable to real time thing is rn.
+	class DriveEncoder {
+		private: 
+			AS5X47 encoder {Constants::IOConstants::driveEncoderCS};
 
-	AS5X47 encoder = AS5X47(Constants::IOConstants::driveEncoderCS);
-	double position;
-	double lastAngle;
-public:
-	DriveEncoder();
+			double position;  // Current position of the drive motor in degrees 
+			double lastAngle; // Previous position of the drive motor 
+		public:
+			/**
+			 * @brief Construct a new Drive Encoder object
+			 * 
+			 */
+			DriveEncoder();
 
-	/*
-	 * Updates the internal position of the motor. Must be called at least once
-	 * per half rotation of the encoder. Will also be required for velocity
-	 * calculation at which point it will need to be called a the frequency of
-	 * position samples in the filter.
-	 */
-	void feed();
 
-	/**
-	 * Returns the position of the drive encoder in rotations.
-	 *
-	 * @return The position of the drive encoder in rotations.
-	 */
-	double getPosition();
-};
+			/**
+			 * @brief Updates the internal position of the motor
+			 * 
+			 * @note This method must be called at least once per half rotation of the encoder
+			 */
+			void feed();
+
+
+			/**
+			 * @brief Returns the position of the drive encoder in rotations.
+			 *
+			 * @return The position of the drive encoder in rotations.
+			 */
+			double getPosition();
+	};
+}
+
+#endif // DRIVE_ENCODER

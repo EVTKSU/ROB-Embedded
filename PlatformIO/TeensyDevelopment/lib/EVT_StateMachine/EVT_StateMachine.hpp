@@ -116,6 +116,9 @@ namespace Signals {
       void printState();
 
 
+      /**
+       * @brief Set the state machine into ERROR state 
+       */
       void setErrorState();
 
 

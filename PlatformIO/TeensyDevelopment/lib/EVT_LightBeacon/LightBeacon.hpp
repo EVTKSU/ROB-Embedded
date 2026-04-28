@@ -45,7 +45,7 @@ namespace Signals {
       bool isOn;              // Condition for if the beacon is on 
       int blinkDelay;         // Blink delay period
 
-      unsigned long lastBlink = 0UL; 
+      size_t lastBlink = 0UL; 
     public:
       /**
        * @brief Define an instance of the LED beacon 

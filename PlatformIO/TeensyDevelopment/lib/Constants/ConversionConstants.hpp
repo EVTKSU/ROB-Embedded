@@ -22,18 +22,16 @@ namespace Constants {
    */
   struct ConversionConstants {
     static constexpr double secToMillis = 1'000.0;
-    static constexpr double millisToSec = (1 / 1'000.0);
+    static constexpr double millisToSec = (1.0 / 1'000.0);
 
-    static constexpr double degToRad = (PI / 180);
-    static constexpr double radToDeg = (180 / PI);
+    static constexpr double degToRad = (PI / 180.0);
+    static constexpr double radToDeg = (180.0 / PI);
 
-    static constexpr double radToTurns = (1 / (2 * PI));
-    static constexpr double turnsToRad = (2 * PI);
+    static constexpr double radToTurns = (1.0 / (2.0 * PI));
+    static constexpr double turnsToRad = (2.0 * PI);
 
-    static constexpr double degToTurns = (1 / 360);
-    static constexpr double turnsToDeg = 360;
-    
-	  static constexpr uint8_t isDriveEncoderInverted = 0;
+    static constexpr double degToTurns = (1.0 / 360.0);
+    static constexpr double turnsToDeg = 360.0;
   };
 }
 

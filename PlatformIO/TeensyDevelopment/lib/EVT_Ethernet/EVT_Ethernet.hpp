@@ -32,7 +32,6 @@ namespace Signals {
 
       uint16_t autoPort = 8888;  // Autonomous command RX port
       uint16_t telemPort = 5005; // Telemetry TX port
-
     public:
       /**
        * @brief Sets up UDP Ethernet.

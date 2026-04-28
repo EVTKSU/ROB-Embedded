@@ -30,6 +30,8 @@ namespace Constants {
 
     static constexpr int vescPolePairs = 4;
 
+    static constexpr bool isDriveEncoderInverted = false;
+
     static constexpr float oDriveMaxTurns = 2.1f;
     static constexpr float oDriveVelLimit = 140.0f;
     static constexpr float oDriveAccelLimit = 400.0f;
@@ -49,7 +51,6 @@ namespace Constants {
     static constexpr float oDriveGearRatio = (1.0 / 20.0);
 
     static constexpr float steeringMaxDegrees = 37.8f;
-    static constexpr float steeringMaxTurns = 2.25f;
   };
 }
 

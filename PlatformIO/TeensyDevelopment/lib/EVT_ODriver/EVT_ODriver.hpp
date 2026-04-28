@@ -30,24 +30,13 @@ namespace MotorControls {
       
       float absCenterPos;                      // Mesaured center position 
       float currentPos;                        // Current ODrive position
-      
-      const float velLimit = 140.0f;           // Maximum velocity in turns per second
-      const float accelLimit = 400.0f;         // Maximum acceleration in turns per second squared
-      const float maxTurns = 2.1f;             // Maximum turns in either direction 
-
-      const float positionGain = 100.0f;       // ODrive position proportional gain
-      const float velocityGain = 0.05f;       // ODrive velocity proportional gain
-      const float integratorGain = 0.0f;       // ODrive velocity integration gain
-
-      const float softMaxCurrent = 30.0f;      // ODrive continuous current limit
-      const float hardMaxCurrent = 80.0f;      // ODrive error current limit 
 
       const double steeringCenterTime = 10.0;  // Allowed time delay to center the steering 
 
       SlewRateLimiter turnLimiter {ControlConstants::oDriveSteeringInputLimit}; // Rate limiter for the steering motor
       
-      unsigned long lastPrintTime = 0UL;       // Previous print time in miliseconds
-      unsigned long initTime = 0UL;            // Start time for the initialization method 
+      size_t lastPrintTime = 0UL;              // Previous print time in miliseconds
+      size_t initTime = 0UL;                   // Start time for the initialization method 
     public:
       /**
        * @brief Defines a new ODriver instance
@@ -139,15 +128,25 @@ namespace MotorControls {
       /**
        * @brief Sends a series of commands to the ODrive over UART
        * 
+       * @tparam N Size of the array 
        * @param cmd String array of ASCII protocol commands
        */
-      void sendCommands(String cmd[]);
+      template <size_t N>
+      void sendCommands(String (&cmd)[N]);
 
 
       /**
        * @brief Reset the odrive so it can be reinitialized
        */
       void reset();
+
+
+      /**
+       * @brief Block the code until the ODrive reaches a given state 
+       * 
+       * @param state State to wait for 
+       */
+      void waitUntilState(ODriveAxisState state, size_t timeout = 0);
 
 
       /**
@@ -188,6 +187,14 @@ namespace MotorControls {
        * @return ODriveFeedback struct of position and velocity 
        */
       ODriveFeedback getFeedback();
+
+
+      /**
+       * @brief Gets the current ODrive axis state 
+       * 
+       * @return ODriveAxisState The current axis state 
+       */
+      ODriveAxisState getAxisState();
   };
 }
 

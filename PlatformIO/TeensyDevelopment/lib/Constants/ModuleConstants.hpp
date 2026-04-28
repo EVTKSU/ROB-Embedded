@@ -17,9 +17,9 @@
 #include <EVT_ODriver.hpp>
 
 #include <EVT_StateMachine.hpp>
+#include <EVT_DriveEncoder.hpp>
 #include <EVT_Ethernet.hpp>
 #include <EVT_AutoMode.hpp>
-#include <EVT_DriveEncoder.hpp>
 #include <LightBeacon.hpp>
 #include <EVT_RC.hpp>
 
@@ -35,8 +35,8 @@ namespace Constants {
     static Signals::AutoDriver autoDriver;
     static Signals::EthernetEVT ethernet;
     static Signals::LightBeacon light;
-    static ::DriveEncoder driveEncoder;
-    
+
+    static MotorControls::DriveEncoder driveEncoder;
     static MotorControls::VescDriver vesc;    
     static MotorControls::ODriver odrive;
   };
@@ -53,8 +53,8 @@ namespace Constants {
   Signals::ControlRC ModuleConstants::transmitter;
   Signals::AutoDriver ModuleConstants::autoDriver;
   Signals::EthernetEVT ModuleConstants::ethernet;
-  ::DriveEncoder ModuleConstants::driveEncoder;
   
+  MotorControls::DriveEncoder ModuleConstants::driveEncoder;
   MotorControls::ODriver ModuleConstants::odrive;
   MotorControls::VescDriver ModuleConstants::vesc {&IOConstants::vescSerial};
 }

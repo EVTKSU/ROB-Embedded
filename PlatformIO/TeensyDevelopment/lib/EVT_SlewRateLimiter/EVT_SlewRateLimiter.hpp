@@ -31,7 +31,6 @@ namespace MotorControls {
       float timeChange;  // Change in time since previous iteration
 
       float lastValue;   // Value of the number at the previous iteration
-
     public:
       /**
        * @brief Define a new SlewRateLimiter given the maximum change in either direction 

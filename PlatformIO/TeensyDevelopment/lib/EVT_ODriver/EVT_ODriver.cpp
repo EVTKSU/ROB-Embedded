@@ -216,7 +216,7 @@ namespace MotorControls {
     currentTarget = ModuleConstants::transmitter.getChannelValue<float>(
       Signals::ChannelRC::RIGHT_X,
       [&](float val) -> float {
-        if (val >= TransmitterConstants::midRC - 40 && val <= TransmitterConstants::midRC + 40) {
+        if (val >= TransmitterConstants::deadbandBounds[0] && val <= TransmitterConstants::deadbandBounds[1]) {
           return absCenterPos; // Creates a deadband of a 5% to be a zero position
         } else {
           return constrain(
@@ -249,9 +249,10 @@ namespace MotorControls {
     IOConstants::oDriveSerial.println(cmd);
   }
 
-
-  void ODriver::sendCommands(String cmd[]) {
-    for (int i = 0; i < (sizeof(cmd) / sizeof(cmd[0])); i++) {
+  
+  template <size_t N>
+  void ODriver::sendCommands(String (&cmd)[N]) {
+    for (size_t i = 0; i < N; i++) {
       IOConstants::oDriveSerial.println(cmd[i]);
     }
   }
@@ -261,6 +262,15 @@ namespace MotorControls {
     Serial.println("Clearing errors");
     oDrive.clearErrors();
     systemInitialized = false;
+  }
+
+
+  void ODriver::waitUntilState(ODriveAxisState state, size_t timeout) {
+    initTime = millis();
+
+    while ((oDrive.getState() != state) && (millis() - initTime < timeout)) {
+      delay(20);
+    }
   }
 
 
@@ -286,5 +296,10 @@ namespace MotorControls {
 
   ODriveFeedback ODriver::getFeedback() {
     return oDrive.getFeedback();
+  }
+
+
+  ODriveAxisState ODriver::getAxisState() {
+    return oDrive.getState();
   }
 }
