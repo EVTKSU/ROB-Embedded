@@ -106,7 +106,8 @@ Modules call `setState()` or `setErrorState()` to transition. `toString()` conve
 ### Autonomous Mode EVT_AutoMode
 
 * Main runtime path is `ModuleConstants::autoDriver.updateAuto(ModuleConstants::ethernet.receiveUDP())`.
-* Expected UDP packet is exactly `erpm,steering_degrees,emergency,state`.
+* Expected UDP packet is exactly `erpm,steering_degrees,emergency,state,dynamic_brake`.
+* `dynamic_brake` is a float from `0.0` to `1.0`.
 * Remote `state` values `ESTOP` / `E-STOP` / `EMERGENCY_STOP` force error stop.
 * Remote `state` values `HOLD` / `MANUAL` / `IDLE` / `RC` / `STOP` command neutral steering + neutral drive.
 

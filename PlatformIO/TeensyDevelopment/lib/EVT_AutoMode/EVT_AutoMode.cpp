@@ -6,7 +6,9 @@
 
 #include <EVT_AutoMode.hpp>
 
+#include "ControlConstants.hpp"
 #include "ConversionConstants.hpp"
+#include "IOConstants.hpp"
 #include "ModuleConstants.hpp"
 using namespace Constants;
 
@@ -105,7 +107,7 @@ void CtrlOdrive() {
 
 void updateAutonomousMode() {
   // Deprecated helper path. Current firmware path is AutoDriver::updateAuto()
-  // with packet format "erpm,steering_degrees,emergency,state".
+  // with packet format "erpm,steering_degrees,emergency,state,dynamic_brake".
   std::string rawCommands = ModuleConstants::ethernet.receiveUDP();
 
   Serial.print(" | Throttle(rpm): ");
@@ -163,6 +165,98 @@ namespace Signals {
     }
   }
 
+  void AutoDriver::setupDynamicBrake() {
+    pinMode(IOConstants::dynamicBrakePulsePin, OUTPUT);
+    pinMode(IOConstants::dynamicBrakeDirPin, OUTPUT);
+    pinMode(IOConstants::dynamicBrakeLimitSwitchPin, INPUT_PULLUP);
+
+    digitalWrite(IOConstants::dynamicBrakePulsePin, LOW);
+    digitalWrite(IOConstants::dynamicBrakeDirPin, LOW);
+  }
+
+  void AutoDriver::pulseDynamicBrakeStep() {
+    digitalWrite(IOConstants::dynamicBrakePulsePin, HIGH);
+    delayMicroseconds(ControlConstants::dynamicBrakeStepPulseUs);
+    digitalWrite(IOConstants::dynamicBrakePulsePin, LOW);
+    delayMicroseconds(ControlConstants::dynamicBrakeStepDelayUs);
+  }
+
+  void AutoDriver::stepDynamicBrake(int steps, bool directionForward) {
+    if (steps <= 0) {
+      return;
+    }
+
+    const bool dirLevel = directionForward
+      ? ControlConstants::dynamicBrakeForwardDirLevel
+      : !ControlConstants::dynamicBrakeForwardDirLevel;
+
+    digitalWrite(IOConstants::dynamicBrakeDirPin, dirLevel ? HIGH : LOW);
+    delayMicroseconds(ControlConstants::dynamicBrakeDirSetupUs);
+
+    for (int i = 0; i < steps; i++) {
+      if (!directionForward && isDynamicBrakeLimitHit()) {
+        dynamicBrakePositionSteps = 0;
+        break;
+      }
+
+      pulseDynamicBrakeStep();
+      dynamicBrakePositionSteps += directionForward ? 1 : -1;
+      if (dynamicBrakePositionSteps < 0) {
+        dynamicBrakePositionSteps = 0;
+      }
+    }
+  }
+
+  bool AutoDriver::isDynamicBrakeLimitHit() const {
+    const int state = digitalRead(IOConstants::dynamicBrakeLimitSwitchPin);
+    return ControlConstants::dynamicBrakeLimitActiveLow ? state == LOW : state == HIGH;
+  }
+
+  bool AutoDriver::homeDynamicBrake() {
+    digitalWrite(
+      IOConstants::dynamicBrakeDirPin,
+      ControlConstants::dynamicBrakeForwardDirLevel ? LOW : HIGH
+    );
+    delayMicroseconds(ControlConstants::dynamicBrakeDirSetupUs);
+
+    for (int i = 0; i < ControlConstants::dynamicBrakeHomeMaxSteps; i++) {
+      if (isDynamicBrakeLimitHit()) {
+        dynamicBrakePositionSteps = 0;
+        stepDynamicBrake(ControlConstants::dynamicBrakePedalOffsetSteps, true);
+        dynamicBrakeHomed = true;
+        return true;
+      }
+
+      pulseDynamicBrakeStep();
+    }
+
+    dynamicBrakeHomed = false;
+    return false;
+  }
+
+  bool AutoDriver::updateDynamicBrake(float brakePercent) {
+    brakePercent = constrain(brakePercent, 0.0f, 1.0f);
+
+    if (!dynamicBrakeHomed && !homeDynamicBrake()) {
+      if (Serial) {
+        Serial.println("Dynamic brake failed to home");
+      }
+      return false;
+    }
+
+    const int targetSteps = ControlConstants::dynamicBrakePedalOffsetSteps
+      + static_cast<int>(brakePercent * (ControlConstants::dynamicBrakeMaxSteps - ControlConstants::dynamicBrakePedalOffsetSteps));
+    const int deltaSteps = targetSteps - dynamicBrakePositionSteps;
+
+    if (deltaSteps > 0) {
+      stepDynamicBrake(deltaSteps, true);
+    } else if (deltaSteps < 0) {
+      stepDynamicBrake(-deltaSteps, false);
+    }
+
+    return true;
+  }
+
   void AutoDriver::updateAuto(const std::string & udpData) {
     if (!udpData.empty()) { // Update the UDP data if the packet isn't an empty string
       strncpy(udpBuffer, udpData.c_str(), sizeof(udpBuffer) - 1);
@@ -170,6 +264,7 @@ namespace Signals {
 
       vescERPM = 0.0;
       steeringAngle = 0.0;
+      dynamicBrakePercent = 0.0;
       emergencyFlag = false;
       holdStateActive = false;
       commandState.clear();
@@ -194,6 +289,9 @@ namespace Signals {
           case 3:
             commandState = normalizeState(token);
             break;
+          case 4:
+            dynamicBrakePercent = constrain(atof(token), 0.0f, 1.0f);
+            break;
         }
 
         token = strtok(nullptr, ",");
@@ -217,6 +315,7 @@ namespace Signals {
   
           updateVESC(0.0f, 20.0f);
           updateODrive(0.0f);
+          updateDynamicBrake(1.0f);
 
           ModuleConstants::stateMachine.setErrorState();
         } else if (holdStateActive) {
@@ -227,8 +326,14 @@ namespace Signals {
 
           updateODrive(0.0f);
           updateVESC(0.0f, 0.0f);
+          updateDynamicBrake(0.0f);
         } else { // Update the ODrive and VESC if no error occurs 
           updateODrive(steeringAngle);
+          if (!updateDynamicBrake(dynamicBrakePercent)) {
+            ModuleConstants::stateMachine.setErrorState();
+            return;
+          }
+
           if (vescERPM < 0.0f) {
             brakeCurrent = constrain(
               (-vescERPM / ControlConstants::vescMaxERPM) * ControlConstants::vescMaxBrake,

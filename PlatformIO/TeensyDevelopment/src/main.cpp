@@ -153,6 +153,7 @@ void setup() {
   // Perform the initial setup
   Serial.println("Initializing modules...");
   ModuleConstants::odrive.setup();
+  ModuleConstants::autoDriver.setupDynamicBrake();
   ModuleConstants::ethernet.setupUDP();
 
   // Set the car into idle state

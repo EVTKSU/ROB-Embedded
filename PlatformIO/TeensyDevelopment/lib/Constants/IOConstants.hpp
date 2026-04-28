@@ -37,6 +37,10 @@ namespace Constants {
 
     static const uint8_t fanPin = 29; 
 
+    static const uint8_t dynamicBrakePulsePin = 31;
+    static const uint8_t dynamicBrakeDirPin = 32;
+    static const uint8_t dynamicBrakeLimitSwitchPin = 33;
+
     static constexpr double updateFrequency = 60.0;
     static constexpr double ledBlinkFrequency = 1.0;
     static constexpr double telemetryFrequency = 5.0;

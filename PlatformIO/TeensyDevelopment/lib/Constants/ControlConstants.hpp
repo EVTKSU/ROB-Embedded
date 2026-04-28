@@ -51,6 +51,15 @@ namespace Constants {
     static constexpr float oDriveGearRatio = (1.0 / 20.0);
 
     static constexpr float steeringMaxDegrees = 37.8f;
+
+    static constexpr int dynamicBrakeMaxSteps = 9000;
+    static constexpr int dynamicBrakePedalOffsetSteps = 500;
+    static constexpr int dynamicBrakeHomeMaxSteps = 20000;
+    static constexpr unsigned int dynamicBrakeStepPulseUs = 10;
+    static constexpr unsigned int dynamicBrakeStepDelayUs = 10;
+    static constexpr unsigned int dynamicBrakeDirSetupUs = 20;
+    static constexpr bool dynamicBrakeForwardDirLevel = true;
+    static constexpr bool dynamicBrakeLimitActiveLow = true;
   };
 }
 
