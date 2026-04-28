@@ -15,6 +15,7 @@
 
 #include <EVT_VescDriver.hpp>
 #include <EVT_ODriver.hpp>
+#include <EVT_DynamicBrake.hpp>
 
 #include <EVT_StateMachine.hpp>
 #include <EVT_DriveEncoder.hpp>
@@ -39,6 +40,7 @@ namespace Constants {
     static MotorControls::DriveEncoder driveEncoder;
     static MotorControls::VescDriver vesc;    
     static MotorControls::ODriver odrive;
+    static MotorControls::DynamicBrake dynamicBrake;
   };
 
 
@@ -56,6 +58,7 @@ namespace Constants {
   
   MotorControls::DriveEncoder ModuleConstants::driveEncoder;
   MotorControls::ODriver ModuleConstants::odrive;
+  MotorControls::DynamicBrake ModuleConstants::dynamicBrake;
   MotorControls::VescDriver ModuleConstants::vesc {&IOConstants::vescSerial};
 }
 

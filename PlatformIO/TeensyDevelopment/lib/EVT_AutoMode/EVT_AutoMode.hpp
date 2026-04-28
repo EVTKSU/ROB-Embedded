@@ -37,25 +37,12 @@ namespace Signals {
       bool emergencyFlag;      // Condition to tell if an error occured
       bool holdStateActive;    // Neutral command when remote state requests hold/manual
       std::string commandState;// State text from UDP packet when present
-      bool dynamicBrakeHomed = false;
-      int dynamicBrakePositionSteps = 0;
 
       const int numFields = 5; // Packet: "erpm,steering_degrees,emergency,state,dynamic_brake"
       char udpBuffer[128];     // Copy of the received UDP data
       char * token;         
       int index; 
-
-      void pulseDynamicBrakeStep();
-      void stepDynamicBrake(int steps, bool directionForward);
-      bool isDynamicBrakeLimitHit() const;
-      bool homeDynamicBrake();
-      bool updateDynamicBrake(float brakePercent);
     public:
-      /**
-       * @brief Sets up dynamic brake stepper pins.
-       */
-      void setupDynamicBrake();
-
       /**
        * @brief Updates the autonomous commands given a UDP packet
        * 

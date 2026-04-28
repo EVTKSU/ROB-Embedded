@@ -165,98 +165,6 @@ namespace Signals {
     }
   }
 
-  void AutoDriver::setupDynamicBrake() {
-    pinMode(IOConstants::dynamicBrakePulsePin, OUTPUT);
-    pinMode(IOConstants::dynamicBrakeDirPin, OUTPUT);
-    pinMode(IOConstants::dynamicBrakeLimitSwitchPin, INPUT_PULLUP);
-
-    digitalWrite(IOConstants::dynamicBrakePulsePin, LOW);
-    digitalWrite(IOConstants::dynamicBrakeDirPin, LOW);
-  }
-
-  void AutoDriver::pulseDynamicBrakeStep() {
-    digitalWrite(IOConstants::dynamicBrakePulsePin, HIGH);
-    delayMicroseconds(ControlConstants::dynamicBrakeStepPulseUs);
-    digitalWrite(IOConstants::dynamicBrakePulsePin, LOW);
-    delayMicroseconds(ControlConstants::dynamicBrakeStepDelayUs);
-  }
-
-  void AutoDriver::stepDynamicBrake(int steps, bool directionForward) {
-    if (steps <= 0) {
-      return;
-    }
-
-    const bool dirLevel = directionForward
-      ? ControlConstants::dynamicBrakeForwardDirLevel
-      : !ControlConstants::dynamicBrakeForwardDirLevel;
-
-    digitalWrite(IOConstants::dynamicBrakeDirPin, dirLevel ? HIGH : LOW);
-    delayMicroseconds(ControlConstants::dynamicBrakeDirSetupUs);
-
-    for (int i = 0; i < steps; i++) {
-      if (!directionForward && isDynamicBrakeLimitHit()) {
-        dynamicBrakePositionSteps = 0;
-        break;
-      }
-
-      pulseDynamicBrakeStep();
-      dynamicBrakePositionSteps += directionForward ? 1 : -1;
-      if (dynamicBrakePositionSteps < 0) {
-        dynamicBrakePositionSteps = 0;
-      }
-    }
-  }
-
-  bool AutoDriver::isDynamicBrakeLimitHit() const {
-    const int state = digitalRead(IOConstants::dynamicBrakeLimitSwitchPin);
-    return ControlConstants::dynamicBrakeLimitActiveLow ? state == LOW : state == HIGH;
-  }
-
-  bool AutoDriver::homeDynamicBrake() {
-    digitalWrite(
-      IOConstants::dynamicBrakeDirPin,
-      ControlConstants::dynamicBrakeForwardDirLevel ? LOW : HIGH
-    );
-    delayMicroseconds(ControlConstants::dynamicBrakeDirSetupUs);
-
-    for (int i = 0; i < ControlConstants::dynamicBrakeHomeMaxSteps; i++) {
-      if (isDynamicBrakeLimitHit()) {
-        dynamicBrakePositionSteps = 0;
-        stepDynamicBrake(ControlConstants::dynamicBrakePedalOffsetSteps, true);
-        dynamicBrakeHomed = true;
-        return true;
-      }
-
-      pulseDynamicBrakeStep();
-    }
-
-    dynamicBrakeHomed = false;
-    return false;
-  }
-
-  bool AutoDriver::updateDynamicBrake(float brakePercent) {
-    brakePercent = constrain(brakePercent, 0.0f, 1.0f);
-
-    if (!dynamicBrakeHomed && !homeDynamicBrake()) {
-      if (Serial) {
-        Serial.println("Dynamic brake failed to home");
-      }
-      return false;
-    }
-
-    const int targetSteps = ControlConstants::dynamicBrakePedalOffsetSteps
-      + static_cast<int>(brakePercent * (ControlConstants::dynamicBrakeMaxSteps - ControlConstants::dynamicBrakePedalOffsetSteps));
-    const int deltaSteps = targetSteps - dynamicBrakePositionSteps;
-
-    if (deltaSteps > 0) {
-      stepDynamicBrake(deltaSteps, true);
-    } else if (deltaSteps < 0) {
-      stepDynamicBrake(-deltaSteps, false);
-    }
-
-    return true;
-  }
-
   void AutoDriver::updateAuto(const std::string & udpData) {
     if (!udpData.empty()) { // Update the UDP data if the packet isn't an empty string
       strncpy(udpBuffer, udpData.c_str(), sizeof(udpBuffer) - 1);
@@ -315,7 +223,7 @@ namespace Signals {
   
           updateVESC(0.0f, 20.0f);
           updateODrive(0.0f);
-          updateDynamicBrake(1.0f);
+          ModuleConstants::dynamicBrake.update(1.0f);
 
           ModuleConstants::stateMachine.setErrorState();
         } else if (holdStateActive) {
@@ -326,10 +234,10 @@ namespace Signals {
 
           updateODrive(0.0f);
           updateVESC(0.0f, 0.0f);
-          updateDynamicBrake(0.0f);
+          ModuleConstants::dynamicBrake.update(0.0f);
         } else { // Update the ODrive and VESC if no error occurs 
           updateODrive(steeringAngle);
-          if (!updateDynamicBrake(dynamicBrakePercent)) {
+          if (!ModuleConstants::dynamicBrake.update(dynamicBrakePercent)) {
             ModuleConstants::stateMachine.setErrorState();
             return;
           }

@@ -52,9 +52,9 @@ namespace Constants {
 
     static constexpr float steeringMaxDegrees = 37.8f;
 
-    static constexpr int dynamicBrakeMaxSteps = 9000;
-    static constexpr int dynamicBrakePedalOffsetSteps = 500;
-    static constexpr int dynamicBrakeHomeMaxSteps = 20000;
+    static constexpr int dynamicBrakeMaxSteps = 9000; // max steps from the home position to the fully extended position
+    static constexpr int dynamicBrakePedalOffsetSteps = 500; // there's a gap from the home position to the point where the brake actually starts to engage, so this is the number of steps to get past that gap
+    static constexpr int dynamicBrakeHomeMaxSteps = 20000; // max steps from the extended position to the home position during homing, if it passes this we know the pinion is loose
     static constexpr unsigned int dynamicBrakeStepPulseUs = 10;
     static constexpr unsigned int dynamicBrakeStepDelayUs = 10;
     static constexpr unsigned int dynamicBrakeDirSetupUs = 20;

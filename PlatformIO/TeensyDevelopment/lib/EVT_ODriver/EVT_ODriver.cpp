@@ -183,6 +183,12 @@ namespace MotorControls {
 
     delay(2'000);
 
+    if (!ModuleConstants::dynamicBrake.home()) {
+      Serial.println("Dynamic brake homing failed after ODrive calibration");
+      ModuleConstants::stateMachine.setErrorState();
+      return;
+    }
+
     systemInitialized = true;
   }
 
