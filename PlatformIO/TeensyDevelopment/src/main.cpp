@@ -68,11 +68,6 @@ void setup() {
       ModuleConstants::light.setColorState(IOConstants::colorOff);
       ModuleConstants::stateMachine.setState(Signals::States::RESET);
     } else {
-      // Print a message to the Serial Monitor if ODrive hasn't been initialized 
-      if (Serial && !ModuleConstants::odrive.isCalibrated()) {
-        Serial.println("ODrive not yet calibrated");
-      }
-
       // Update the values for the ODrive and VESC RC 
       ModuleConstants::odrive.updateRC();
       ModuleConstants::vesc.updateRC(ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false));
@@ -152,6 +147,7 @@ void setup() {
 
   // Perform the initial setup
   Serial.println("Initializing modules...");
+  ModuleConstants::driveEncoder.setup();
   ModuleConstants::odrive.setup();
   ModuleConstants::dynamicBrake.setup();
   ModuleConstants::ethernet.setupUDP();
@@ -170,6 +166,14 @@ void loop() {
 
   // Limits the update frequency so that the Teensy doesn't get overloaded
   if ((currentTime - lastUpdate) >= (ConversionConstants::secToMillis / IOConstants::updateFrequency)) {
+    // Update the drive encoder position accumulator before any RC-related early exit.
+    ModuleConstants::driveEncoder.feed();
+
+    if (Serial && IOConstants::telemetryToSerial && ((currentTime - lastPrintMessage) >= (ConversionConstants::secToMillis / IOConstants::printSerialFrequency))) {
+      Serial.printf("Drive encoder: %.6f turns\n", ModuleConstants::driveEncoder.getPosition());
+      lastPrintMessage = millis();
+    }
+
     // Skips the loop if the SBUS gets a bad frame 
     if (!ModuleConstants::transmitter.update()) {
       // Prints to the Serial Monitor about a bad frame every 5.0 seconds
@@ -178,11 +182,9 @@ void loop() {
         lastWaitingPrint = millis();
       }
 
+      lastUpdate = millis();
       return;
     }
-
-    // Updates the drive encoder position accumulator
-    ModuleConstants::driveEncoder.feed();
 
     // Runs the current state of the state machine 
     ModuleConstants::stateMachine.runState();
@@ -198,15 +200,16 @@ void loop() {
       ModuleConstants::stateMachine.checkError(),
       ModuleConstants::stateMachine.toString(ModuleConstants::stateMachine.getState()),
       ModuleConstants::vesc.getState().erpmCommand / ControlConstants::vescPolePairs,
-      ModuleConstants::odrive.getFeedback().pos,
-      ModuleConstants::odrive.getVoltage(),
+      ModuleConstants::odrive.getCachedFeedback().pos,
+      ModuleConstants::odrive.getCachedVoltage(),
       ModuleConstants::vesc.getVoltage(),
-      ModuleConstants::odrive.getCurrent(),
+      ModuleConstants::odrive.getCachedCurrent(),
       ModuleConstants::vesc.getCurrent(),
       ModuleConstants::odrive.getTarget(),
       ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false),
       ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false),
-      ModuleConstants::driveEncoder.getPosition()
+      ModuleConstants::driveEncoder.getRevolutionsFromStart(),
+      ModuleConstants::driveEncoder.getCount()
     );
 
     // Records the last telemetry timestamp

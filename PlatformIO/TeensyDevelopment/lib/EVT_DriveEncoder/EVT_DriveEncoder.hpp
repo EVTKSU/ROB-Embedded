@@ -13,18 +13,21 @@
  * @date   March 18, 2026
 *//*---------------------------------------------------------------------------*/
 
-#include <AS5X47.h>
-
 #include <IOConstants.hpp>
 
 namespace MotorControls {
-	// TODO: Implement velocity filter. IDK how reliable to real time thing is rn.
 	class DriveEncoder {
 		private: 
-			AS5X47 encoder {Constants::IOConstants::driveEncoderCS};
+			static DriveEncoder * instance;
 
-			double position;  // Current position of the drive motor in degrees 
-			double lastAngle; // Previous position of the drive motor 
+			volatile int32_t count;
+			volatile uint8_t lastState;
+
+			static constexpr double countsPerRotation =
+				static_cast<double>(Constants::IOConstants::driveEncoderPulsesPerRev) * 4.0;
+
+			static void updateISR();
+			void updateFromPins();
 		public:
 			/**
 			 * @brief Construct a new Drive Encoder object
@@ -32,11 +35,14 @@ namespace MotorControls {
 			 */
 			DriveEncoder();
 
+			/**
+			 * @brief Initializes the encoder hardware.
+			 */
+			void setup();
 
 			/**
-			 * @brief Updates the internal position of the motor
+			 * @brief Kept for compatibility. Position is updated by pin-change interrupts.
 			 * 
-			 * @note This method must be called at least once per half rotation of the encoder
 			 */
 			void feed();
 
@@ -47,6 +53,20 @@ namespace MotorControls {
 			 * @return The position of the drive encoder in rotations.
 			 */
 			double getPosition();
+
+			/**
+			 * @brief Returns accumulated drive encoder revolutions since firmware startup.
+			 *
+			 * @return The accumulated drive encoder revolutions since startup.
+			 */
+			double getRevolutionsFromStart();
+
+			/**
+			 * @brief Returns the raw accumulated quadrature count since firmware startup.
+			 *
+			 * @return The raw accumulated quadrature count since startup.
+			 */
+			int32_t getCount();
 	};
 }
 

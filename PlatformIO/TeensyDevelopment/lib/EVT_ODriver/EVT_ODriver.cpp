@@ -10,6 +10,8 @@ using namespace Constants;
 
 namespace MotorControls {
   ODriver::ODriver() {
+    fb = {0.0f, 0.0f};
+
     // Start the serial monitor if it hasn't already been started 
     if (!Serial) {
       Serial.begin(IOConstants::serialBaudrate);
@@ -36,7 +38,13 @@ namespace MotorControls {
       "ODrive found"
     );
 
-    return oDrive.getState() != ODriveAxisState::AXIS_STATE_UNDEFINED;
+    if (oDrive.getState() != ODriveAxisState::AXIS_STATE_UNDEFINED) {
+      getVoltage();
+      getCurrent();
+      return true;
+    }
+
+    return false;
   }
 
 
@@ -152,7 +160,17 @@ namespace MotorControls {
       delay(20);
     }
 
-    Serial.println("Starting closed loop control");
+    if (oDrive.getState() != ODriveAxisState::AXIS_STATE_CLOSED_LOOP_CONTROL) {
+      Serial.println("ODrive failed to enter closed loop control after calibration");
+      Serial.print("Active errors: ");
+      Serial.println((long)getActiveErrors());
+      Serial.print("Disarm reason: ");
+      Serial.println(getDisarmReason());
+      ModuleConstants::stateMachine.setErrorState();
+      return;
+    }
+
+    Serial.println("ODrive is in closed loop control");
 
     // Configure and enable trapezoidal trajectory 
     configureTrapTrajLimits();
@@ -181,6 +199,11 @@ namespace MotorControls {
     Serial.print("Current Input Mode: ");
     Serial.println(getInputMode());
 
+    // ODrive steering is calibrated and ready at this point.
+    getVoltage();
+    getCurrent();
+    systemInitialized = true;
+
     delay(2'000);
 
     if (!ModuleConstants::dynamicBrake.home()) {
@@ -188,15 +211,11 @@ namespace MotorControls {
       ModuleConstants::stateMachine.setErrorState();
       return;
     }
-
-    systemInitialized = true;
   }
 
   
   void ODriver::updateRC() {
-    if (!ModuleConstants::transmitter.update()) {
-      return;
-    }
+    ModuleConstants::transmitter.update();
 
     // LED heartbeat until system is initialized 
     if (!systemInitialized && (millis() - initTime) > 500) { 
@@ -241,13 +260,19 @@ namespace MotorControls {
     );
 
     // Send position command (in turns) with a velocity limit
-    oDrive.trapezoidalMove(turnLimiter.calculate(currentTarget));
+    currentTarget = turnLimiter.calculate(currentTarget);
+    fb.pos = currentTarget;
+    fb.vel = 0.0f;
+    oDrive.trapezoidalMove(currentTarget);
   }
 
 
   void ODriver::updateAuto(float steering) {
     // Send position command in turns
-    oDrive.trapezoidalMove(absCenterPos + steering);
+    currentTarget = absCenterPos + steering;
+    fb.pos = currentTarget;
+    fb.vel = 0.0f;
+    oDrive.trapezoidalMove(currentTarget);
   }
 
 
@@ -286,12 +311,24 @@ namespace MotorControls {
 
   
   float ODriver::getVoltage() {
-    return oDrive.getParameterAsFloat("vbus_voltage");
+    cachedVoltage = oDrive.getParameterAsFloat("vbus_voltage");
+    return cachedVoltage;
   }
 
 
   float ODriver::getCurrent() {
-    return oDrive.getParameterAsFloat("ibus");
+    cachedCurrent = oDrive.getParameterAsFloat("ibus");
+    return cachedCurrent;
+  }
+
+
+  float ODriver::getCachedVoltage() {
+    return cachedVoltage;
+  }
+
+
+  float ODriver::getCachedCurrent() {
+    return cachedCurrent;
   }
 
 
@@ -301,7 +338,13 @@ namespace MotorControls {
 
 
   ODriveFeedback ODriver::getFeedback() {
-    return oDrive.getFeedback();
+    fb = oDrive.getFeedback();
+    return fb;
+  }
+
+
+  ODriveFeedback ODriver::getCachedFeedback() {
+    return fb;
   }
 
 

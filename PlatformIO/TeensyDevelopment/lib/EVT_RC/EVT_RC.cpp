@@ -2,6 +2,10 @@
 
 namespace Signals {
   ControlRC::ControlRC() {
+    for (int i = 0; i < TransmitterConstants::numChannels; i++) {
+      channelVal[i] = TransmitterConstants::midRC;
+    }
+
     IOConstants::sBusSerial.begin(IOConstants::sBusBaudrate, SERIAL_8E2); // Begin the sBus serial port
     sBus.begin(); // Begin the sBus communication 
 
@@ -11,9 +15,25 @@ namespace Signals {
 
   bool ControlRC::update() {
     uint16_t nextChannelVal[TransmitterConstants::numChannels];
-    if (!sBus.read(nextChannelVal, &sBusFailsafe, &sBusLostFrame) || sBusLostFrame || sBusFailsafe) return false;
-    for (int i = 0; i < TransmitterConstants::numChannels; i++) channelVal[i] = nextChannelVal[i];
-    return true;
+
+    if (sBus.read(nextChannelVal, &sBusFailsafe, &sBusLostFrame)) {
+      if (sBusFailsafe) {
+        hasValidFrame = false;
+        return false;
+      }
+
+      if (!sBusLostFrame) {
+        for (int i = 0; i < TransmitterConstants::numChannels; i++) {
+          channelVal[i] = nextChannelVal[i];
+        }
+
+        hasValidFrame = true;
+        lastValidFrame = millis();
+        return true;
+      }
+    }
+
+    return hasValidFrame && ((millis() - lastValidFrame) <= validFrameTimeout);
   }
 
 

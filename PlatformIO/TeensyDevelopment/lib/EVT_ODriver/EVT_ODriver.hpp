@@ -27,6 +27,8 @@ namespace MotorControls {
 
       String odrvDebug;                        // ODrive debug string
       ODriveFeedback fb;                       // ODrive feedback for position and velocity
+      float cachedVoltage = 0.0f;              // Last sampled ODrive voltage
+      float cachedCurrent = 0.0f;              // Last sampled ODrive current
       
       float absCenterPos;                      // Mesaured center position 
       float currentPos;                        // Current ODrive position
@@ -174,6 +176,22 @@ namespace MotorControls {
 
 
       /**
+       * @brief Gets the cached voltage of the ODrive without querying UART.
+       *
+       * @return Cached ODrive voltage.
+       */
+      float getCachedVoltage();
+
+
+      /**
+       * @brief Gets the cached current of the ODrive without querying UART.
+       *
+       * @return Cached ODrive current.
+       */
+      float getCachedCurrent();
+
+
+      /**
        * @brief Checks if calibration is true
        * 
        * @return A boolean value dependent on if ODrive has been calibrated
@@ -187,6 +205,14 @@ namespace MotorControls {
        * @return ODriveFeedback struct of position and velocity 
        */
       ODriveFeedback getFeedback();
+
+
+      /**
+       * @brief Gets the cached ODrive feedback without querying UART.
+       *
+       * @return Cached ODriveFeedback struct of position and velocity.
+       */
+      ODriveFeedback getCachedFeedback();
 
 
       /**

@@ -64,12 +64,13 @@ namespace Signals {
     float oDrvTarget,
     uint16_t steer,
     uint16_t throttle,
-    double driveEncoderPosition
+    double driveEncoderRevolutions,
+    int32_t driveEncoderCount
   ) {
     snprintf(
       telemetryBuffer,
       sizeof(telemetryBuffer),
-      "%d,%s,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%d,%d,%0.4f",
+      "%d,%s,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%d,%d,%0.6f,%ld",
       error,
       state,
       rpm,
@@ -81,7 +82,8 @@ namespace Signals {
       oDrvTarget,
       steer,
       throttle,
-      driveEncoderPosition
+      driveEncoderRevolutions,
+      static_cast<long>(driveEncoderCount)
     );
 
     // Print the telemetry packet to the Serial Monitor.

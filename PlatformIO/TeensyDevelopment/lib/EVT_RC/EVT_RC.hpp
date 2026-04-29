@@ -67,6 +67,10 @@ namespace Signals {
 
       bool sBusFailsafe = false;
       bool sBusLostFrame = false;
+      bool hasValidFrame = false;
+      size_t lastValidFrame = 0UL;
+
+      static constexpr size_t validFrameTimeout = 100UL;
     public:
       /**
        * @brief Enum used for selection of mapping values 

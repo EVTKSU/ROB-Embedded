@@ -1,51 +1,89 @@
 #include "EVT_DriveEncoder.hpp"
 
 #include "ControlConstants.hpp"
-#include "ConversionConstants.hpp"
 using namespace Constants;
 
-#include <cmath>
-
 namespace MotorControls {
+	DriveEncoder * DriveEncoder::instance = nullptr;
+
 	DriveEncoder::DriveEncoder() {
-		Settings1 settings1 {};
+		count = 0;
+		lastState = 0;
+	}
 
-		// Set the inversion of the encoder.
-		settings1.values.dir = ControlConstants::isDriveEncoderInverted;
 
-		// Make sure it is abi mode.
-		settings1.values.uvw_abi = 0;
-		
-		// Use the binary abi mode.
-		settings1.values.abibin = 1;
+	void DriveEncoder::setup() {
+		instance = this;
 
-		encoder.writeSettings1(settings1);
-		
-		Settings2 settings2 {};
+		pinMode(IOConstants::driveEncoderPinA, INPUT_PULLUP);
+		pinMode(IOConstants::driveEncoderPinB, INPUT_PULLUP);
 
-		// Use the highest resolution
-		settings2.values.abires = 0;
+		lastState = (digitalReadFast(IOConstants::driveEncoderPinA) << 1) |
+							 digitalReadFast(IOConstants::driveEncoderPinB);
 
-		encoder.writeSettings2(settings2);
-
-		lastAngle = encoder.readAngle() * ConversionConstants::degToTurns;
-		position = lastAngle;
+		attachInterrupt(digitalPinToInterrupt(IOConstants::driveEncoderPinA), updateISR, CHANGE);
+		attachInterrupt(digitalPinToInterrupt(IOConstants::driveEncoderPinB), updateISR, CHANGE);
 	}
 
 
 	void DriveEncoder::feed() {
-		double delta = (encoder.readAngle() * ConversionConstants::degToTurns) - lastAngle;
-
-		if (std::abs(delta) > 0.5) {
-			position += std::copysign(1, -delta);
-		}
-
-		position += delta;
-		lastAngle += delta;
 	}
 
-	
+
 	double DriveEncoder::getPosition() {
-		return position;
+		return getRevolutionsFromStart();
+	}
+
+
+	double DriveEncoder::getRevolutionsFromStart() {
+		return static_cast<double>(getCount()) / countsPerRotation;
+	}
+
+
+	int32_t DriveEncoder::getCount() {
+		noInterrupts();
+		int32_t countSnapshot = count;
+		interrupts();
+
+		if (ControlConstants::isDriveEncoderInverted) {
+			countSnapshot = -countSnapshot;
+		}
+
+		return countSnapshot;
+	}
+
+
+	void DriveEncoder::updateISR() {
+		if (instance != nullptr) {
+			instance->updateFromPins();
+		}
+	}
+
+
+	void DriveEncoder::updateFromPins() {
+		const uint8_t newState = (digitalReadFast(IOConstants::driveEncoderPinA) << 1) |
+														 digitalReadFast(IOConstants::driveEncoderPinB);
+		const uint8_t transition = (lastState << 2) | newState;
+
+		switch (transition) {
+			case 0b0001:
+			case 0b0111:
+			case 0b1110:
+			case 0b1000:
+				count++;
+				break;
+
+			case 0b0010:
+			case 0b1011:
+			case 0b1101:
+			case 0b0100:
+				count--;
+				break;
+
+			default:
+				break;
+		}
+
+		lastState = newState;
 	}
 }

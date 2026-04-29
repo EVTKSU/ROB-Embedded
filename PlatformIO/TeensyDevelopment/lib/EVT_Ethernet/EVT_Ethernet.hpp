@@ -52,7 +52,8 @@ namespace Signals {
        * @param oDrvTarget ODrive target position 
        * @param steer RC steering input
        * @param throttle RC throttle input
-       * @param driveEncoderPosition Drive encoder position in rotations
+       * @param driveEncoderRevolutions Drive encoder revolutions accumulated since firmware startup
+       * @param driveEncoderCount Raw drive encoder quadrature count accumulated since firmware startup
        */
       void sendTelemetry(
         bool error,
@@ -66,7 +67,8 @@ namespace Signals {
         float oDrvTarget,
         uint16_t steer,
         uint16_t throttle,
-        double driveEncoderPosition
+        double driveEncoderRevolutions,
+        int32_t driveEncoderCount
       );
 
       /**

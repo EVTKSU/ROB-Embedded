@@ -14,8 +14,6 @@
 *//*---------------------------------------------------------------------------*/
 
 #include <Arduino.h>
-#include <SPI.h>
-
 #include <LightBeacon.hpp>
 
 // #include <stdint.h>
@@ -58,12 +56,9 @@ namespace Constants {
     static constexpr HardwareSerial & oDriveSerial = Serial6; // UART used for the ODrive
     static constexpr HardwareSerial & vescSerial = Serial2;   // UART used for the VESC
 	
-	  static constexpr SPIClass & driveEncoderSPI = SPI1;
-
-    static constexpr uint8_t driveEncoderCS = 0;    // Chip select for SPI1
-	  static constexpr uint8_t driveEncoderMOSI = 26; // MOSI for SPI1
-	  static constexpr uint8_t driveEncoderMISO = 1;  // MISO for SPI1
-	  static constexpr uint8_t driveEncoderSCK = 27;  // Clock for SPI1
+    static constexpr uint8_t driveEncoderPinA = 26;    // E38S6G5 channel A
+    static constexpr uint8_t driveEncoderPinB = 27;    // E38S6G5 channel B
+    static constexpr uint16_t driveEncoderPulsesPerRev = 600;
 
     static Signals::BeaconPins lightPins;
 

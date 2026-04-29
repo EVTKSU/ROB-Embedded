@@ -126,15 +126,16 @@ void updateAutonomousMode() {
     ModuleConstants::stateMachine.checkError(),
     ModuleConstants::stateMachine.toString(ModuleConstants::stateMachine.getState()),
     (float)(ModuleConstants::vesc.getState().erpmCommand / ControlConstants::vescPolePairs),
-    ModuleConstants::odrive.getFeedback().pos,
-    ModuleConstants::odrive.getVoltage(),
+    ModuleConstants::odrive.getCachedFeedback().pos,
+    ModuleConstants::odrive.getCachedVoltage(),
     ModuleConstants::vesc.getVoltage(),
-    ModuleConstants::odrive.getCurrent(),
+    ModuleConstants::odrive.getCachedCurrent(),
     ModuleConstants::vesc.getCurrent(),
     ModuleConstants::odrive.getTarget(),
     ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false),
     ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false),
-    ModuleConstants::driveEncoder.getPosition()
+    ModuleConstants::driveEncoder.getRevolutionsFromStart(),
+    ModuleConstants::driveEncoder.getCount()
   );
 
   if (!rawCommands.empty()) {
