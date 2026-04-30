@@ -37,6 +37,28 @@ namespace Signals {
   }
 
 
+  bool ControlRC::reacquire(size_t timeout) {
+    while (IOConstants::sBusSerial.available() > 0) {
+      IOConstants::sBusSerial.read();
+    }
+
+    sBus.begin();
+    hasValidFrame = false;
+    lastValidFrame = 0UL;
+
+    const size_t startTime = millis();
+    while ((millis() - startTime) < timeout) {
+      if (update()) {
+        return true;
+      }
+
+      delay(1);
+    }
+
+    return false;
+  }
+
+
   void ControlRC::setMapping(const uint16_t mapArray[], mapType mappingType) {
     switch (mappingType) {
       case (mapType::JOYSTICK):

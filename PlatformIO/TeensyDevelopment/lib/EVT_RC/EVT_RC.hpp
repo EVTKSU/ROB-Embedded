@@ -96,6 +96,18 @@ namespace Signals {
 
 
       /**
+       * @brief Reinitializes SBUS parsing and waits briefly for a fresh frame.
+       *
+       * Useful after long blocking operations where the UART buffer may contain
+       * stale or partial SBUS data.
+       *
+       * @param timeout Timeout in milliseconds to wait for a valid frame
+       * @return true if a valid frame was received before timeout
+       */
+      bool reacquire(size_t timeout = 100UL);
+
+
+      /**
        * @brief Sets the mapping array given the type of mapping to set
        * 
        * @param mapArray Array to use to set the mapping values

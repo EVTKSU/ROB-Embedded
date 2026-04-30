@@ -206,11 +206,13 @@ namespace MotorControls {
 
     delay(2'000);
 
-    if (!ModuleConstants::dynamicBrake.home()) {
-      Serial.println("Dynamic brake homing failed after ODrive calibration");
-      ModuleConstants::stateMachine.setErrorState();
-      return;
-    }
+//    if (!ModuleConstants::dynamicBrake.home()) {
+      //Serial.println("Dynamic brake homing failed after ODrive calibration");
+    //  ModuleConstants::stateMachine.setErrorState();
+  //    return;
+    //}
+
+    ModuleConstants::transmitter.reacquire();
   }
 
   
@@ -219,6 +221,7 @@ namespace MotorControls {
 
     // LED heartbeat until system is initialized 
     if (!systemInitialized && (millis() - initTime) > 500) { 
+
       initTime = millis();
       digitalWrite(IOConstants::ledBuiltIn, !digitalRead(IOConstants::ledBuiltIn));
     } else if (systemInitialized) {
@@ -231,7 +234,11 @@ namespace MotorControls {
       if (ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWA, Signals::ControlRC::mapSwitches)) {
         initCalibration();
       } else {
-        Serial.println("Waiting for calibration switch (SWA)");
+        static size_t lastCalibrationPrint = 0UL;
+        if (Serial && ((millis() - lastCalibrationPrint) >= 1'000UL)) {
+          Serial.println("Waiting for calibration switch (SWA)");
+          lastCalibrationPrint = millis();
+        }
 
         return;
       }

@@ -39,15 +39,15 @@ namespace Constants {
     static const uint8_t dynamicBrakeDirPin = 32;
     static const uint8_t dynamicBrakeLimitSwitchPin = 33;
 
-    static constexpr double updateFrequency = 60.0;
+    static constexpr double updateFrequency = 80.0;
     static constexpr double ledBlinkFrequency = 1.0;
-    static constexpr double telemetryFrequency = 5.0;
+    static constexpr double telemetryFrequency = 1.0;
     static constexpr double printSerialFrequency = 10.0;
 
-    static const bool telemetryToSerial = true;
-    static const bool motorDataToSerial = true;
+    static const bool telemetryToSerial = false;
+    static const bool motorDataToSerial = false;
 
-    static const size_t serialBaudrate = 9'600;
+    static const size_t serialBaudrate = 115'200;
     static const size_t sBusBaudrate = 100'000;
     static const size_t oDriveBaudrate = 115'200;
     static const size_t vescBaudrate = 115'200;

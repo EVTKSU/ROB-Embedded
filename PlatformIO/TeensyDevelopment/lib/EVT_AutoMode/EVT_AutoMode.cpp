@@ -256,10 +256,6 @@ namespace Signals {
           }
         }
       }
-    } else { // Print a warning to the Serial Monitor if the UDP packet is empty
-      if (Serial) {
-        Serial.println("Received empty UDP packet");
-      }
     }
   }
 
