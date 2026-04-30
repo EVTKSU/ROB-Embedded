@@ -56,8 +56,8 @@ namespace Constants {
     static constexpr HardwareSerial & oDriveSerial = Serial6; // UART used for the ODrive
     static constexpr HardwareSerial & vescSerial = Serial2;   // UART used for the VESC
 	
-    static constexpr uint8_t driveEncoderPinA = 26;    // E38S6G5 channel A
-    static constexpr uint8_t driveEncoderPinB = 27;    // E38S6G5 channel B
+    static constexpr uint8_t driveEncoderPinA = 1;     // E38S6G5 channel A
+    static constexpr uint8_t driveEncoderPinB = 0;     // E38S6G5 channel B
     static constexpr uint16_t driveEncoderPulsesPerRev = 600;
 
     static Signals::BeaconPins lightPins;
