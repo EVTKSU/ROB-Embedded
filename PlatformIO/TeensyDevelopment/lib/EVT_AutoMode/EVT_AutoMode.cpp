@@ -112,8 +112,8 @@ void updateAutonomousMode() {
 
   Serial.print(" | Throttle(rpm): ");
   Serial.print(throttleRpm);
-  Serial.print(" | Steering (turns): ");
-  Serial.print(SteeringPos);
+  Serial.print(" | Steering (deg): ");
+  Serial.print((SteeringPos / ControlConstants::oDriveMaxTurns) * ControlConstants::steeringMaxDegrees);
   Serial.print(" | Emergency: ");
   Serial.println(emergency ? "YES" : "NO");
   Serial.println(brakeState);
@@ -126,12 +126,12 @@ void updateAutonomousMode() {
     ModuleConstants::stateMachine.checkError(),
     ModuleConstants::stateMachine.toString(ModuleConstants::stateMachine.getState()),
     (float)(ModuleConstants::vesc.getState().erpmCommand / ControlConstants::vescPolePairs),
-    ModuleConstants::odrive.getCachedFeedback().pos,
+    ModuleConstants::odrive.getCachedSteeringDegrees(),
     ModuleConstants::odrive.getCachedVoltage(),
     ModuleConstants::vesc.getVoltage(),
     ModuleConstants::odrive.getCachedCurrent(),
     ModuleConstants::vesc.getCurrent(),
-    ModuleConstants::odrive.getTarget(),
+    ModuleConstants::odrive.getTargetDegrees(),
     ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false),
     ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false),
     ModuleConstants::driveEncoder.getRevolutionsFromStart(),

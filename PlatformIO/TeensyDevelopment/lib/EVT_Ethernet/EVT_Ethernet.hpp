@@ -43,13 +43,13 @@ namespace Signals {
        * 
        * @param error Boolean to denote an error in the low level 
        * @param state Current state of the State Machine
-       * @param rpm VESC rpm
-       * @param steering ODrive steering 
+       * @param rpm VESC mechanical RPM
+       * @param steering ODrive steering angle in degrees
        * @param oDrvVolt ODrive voltage
        * @param vescVolt VESC voltage
        * @param oDrvCurr ODrive current
        * @param vescCurr VESC current
-       * @param oDrvTarget ODrive target position 
+       * @param oDrvTarget ODrive target steering angle in degrees
        * @param steer RC steering input
        * @param throttle RC throttle input
        * @param driveEncoderRevolutions Drive encoder revolutions accumulated since firmware startup

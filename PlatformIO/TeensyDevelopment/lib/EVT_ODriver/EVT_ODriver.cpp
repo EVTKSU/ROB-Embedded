@@ -309,6 +309,16 @@ namespace MotorControls {
     return currentTarget;
   }
 
+
+  float ODriver::turnsToSteeringDegrees(float positionTurns) const {
+    return ((positionTurns - absCenterPos) / ControlConstants::oDriveMaxTurns) * ControlConstants::steeringMaxDegrees;
+  }
+
+
+  float ODriver::getTargetDegrees() {
+    return turnsToSteeringDegrees(currentTarget);
+  }
+
   
   float ODriver::getVoltage() {
     cachedVoltage = oDrive.getParameterAsFloat("vbus_voltage");
@@ -345,6 +355,11 @@ namespace MotorControls {
 
   ODriveFeedback ODriver::getCachedFeedback() {
     return fb;
+  }
+
+
+  float ODriver::getCachedSteeringDegrees() {
+    return turnsToSteeringDegrees(fb.pos);
   }
 
 

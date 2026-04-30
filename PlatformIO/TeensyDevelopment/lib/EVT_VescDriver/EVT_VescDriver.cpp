@@ -52,6 +52,9 @@ namespace MotorControls {
 
 
   void VescDriver::updateAuto(float erpm, float brake) {
+    targetValues.erpmCommand = erpm;
+    targetValues.brakeCommand = brake;
+
     if (brake > 0.0f) {
       vesc.setBrakeCurrent(brake);
       return;

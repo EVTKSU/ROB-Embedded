@@ -23,15 +23,15 @@ namespace MotorControls {
 
       bool systemInitialized = false;          // Condition to denote initialization state
       bool errorClearFlag = false;
-      float currentTarget;                     // Current target position 
+      float currentTarget = 0.0f;              // Current target position in ODrive turns
 
       String odrvDebug;                        // ODrive debug string
       ODriveFeedback fb;                       // ODrive feedback for position and velocity
       float cachedVoltage = 0.0f;              // Last sampled ODrive voltage
       float cachedCurrent = 0.0f;              // Last sampled ODrive current
       
-      float absCenterPos;                      // Mesaured center position 
-      float currentPos;                        // Current ODrive position
+      float absCenterPos = 0.0f;               // Mesaured center position in ODrive turns
+      float currentPos = 0.0f;                 // Current ODrive position in ODrive turns
 
       const double steeringCenterTime = 10.0;  // Allowed time delay to center the steering 
 
@@ -39,6 +39,14 @@ namespace MotorControls {
       
       size_t lastPrintTime = 0UL;              // Previous print time in miliseconds
       size_t initTime = 0UL;                   // Start time for the initialization method 
+
+      /**
+       * @brief Converts an absolute ODrive position to a steering angle.
+       *
+       * @param positionTurns Absolute ODrive position in turns
+       * @return Steering angle in degrees relative to the calibrated center
+       */
+      float turnsToSteeringDegrees(float positionTurns) const;
     public:
       /**
        * @brief Defines a new ODriver instance
@@ -158,6 +166,14 @@ namespace MotorControls {
        */
       float getTarget();
 
+
+      /**
+       * @brief Gets the current target steering angle.
+       *
+       * @return Target steering angle in degrees relative to the calibrated center
+       */
+      float getTargetDegrees();
+
       
       /**
        * @brief Gets the voltage of the ODrive 
@@ -213,6 +229,14 @@ namespace MotorControls {
        * @return Cached ODriveFeedback struct of position and velocity.
        */
       ODriveFeedback getCachedFeedback();
+
+
+      /**
+       * @brief Gets the cached steering position.
+       *
+       * @return Cached steering angle in degrees relative to the calibrated center
+       */
+      float getCachedSteeringDegrees();
 
 
       /**
