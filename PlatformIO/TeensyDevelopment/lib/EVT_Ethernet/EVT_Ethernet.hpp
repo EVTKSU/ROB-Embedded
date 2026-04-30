@@ -24,7 +24,7 @@ namespace Signals {
       EthernetUDP udp; // One UDP socket used for both RX commands and TX telemetry
 
       IPAddress teensyIP {192, 168, 0, 177};              // Teensy 4.1 IP address 
-      IPAddress pandaIP  {192, 168, 0, 121};              // Latte Panda Sigma IP address
+      IPAddress pandaIP  {169, 254, 1, 10};              // Latte Panda Sigma IP address
       byte mac[6] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}; // Teensy Ethernet MAC address 
 
       char autoBuffer[256];      // UDP command packet buffer from Latte Panda Sigma 
