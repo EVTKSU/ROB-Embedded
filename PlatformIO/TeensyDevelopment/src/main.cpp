@@ -10,6 +10,7 @@ size_t currentTime = 0;      // Current timestamp in milliseconds
 size_t lastUpdate = 0;       // Timestamp in milliseconds of the last attempted update to all values 
 size_t lastWaitingPrint = 0; // Timestamp in milliseconds of the last serial output denoting a bad frame
 size_t lastPrintMessage = 0; // Timestamp in milliseconds of the last serial output
+size_t lastMotorPrint = 0;   // Timestamp in milliseconds of the last motor debug output
 size_t lastTelem = 0;        // Timestamp in milliseconds of the last telemetry packet
 
 bool ledState = false; // Current state of the on board LED
@@ -70,12 +71,31 @@ void setup() {
     } else {
       // Update the values for the ODrive and VESC RC 
       ModuleConstants::odrive.updateRC();
-      ModuleConstants::vesc.updateRC(ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false));
+      const uint16_t throttleInput = ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false);
+      const uint16_t brakeInput = ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_Y, false);
+      if (ModuleConstants::odrive.isCalibrated()) {
+        ModuleConstants::vesc.updateRC(
+          throttleInput,
+          brakeInput
+        );
+      } else {
+        ModuleConstants::vesc.updateRC(
+          TransmitterConstants::midRC,
+          TransmitterConstants::midRC
+        );
+      }
 
-      if (Serial && IOConstants::motorDataToSerial) {
+      if (Serial && IOConstants::motorDataToSerial && ((currentTime - lastMotorPrint) >= 250UL)) {
         // Print the Current values the car is trying to achieve 
-        Serial.printf("Steering - %.3f deg\t| ", ModuleConstants::odrive.getTargetDegrees());
+        Serial.printf(
+          "RC steer=%u throttle=%u brake=%u\t| Steering - %.3f deg\t| ",
+          ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false),
+          throttleInput,
+          brakeInput,
+          ModuleConstants::odrive.getTargetDegrees()
+        );
         ModuleConstants::vesc.printState();
+        lastMotorPrint = millis();
       }
     }
   });

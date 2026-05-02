@@ -6,47 +6,97 @@ using namespace Constants;
 
 
 namespace MotorControls {
+  namespace {
+    float mapRCToRange(uint16_t value, uint16_t inMin, uint16_t inMax, float outMin, float outMax) {
+      return outMin + ((float)(value - inMin) * (outMax - outMin) / (float)(inMax - inMin));
+    }
+  }
+
+
   VescDriver::VescDriver(HardwareSerial * vescSerial) { 
     (*vescSerial).begin(IOConstants::vescBaudrate); // Starts the given UART instance at correct Baudrate
     vesc.setSerialPort(vescSerial);                 // Sets UART port being used for communication
   }
 
 
-  void VescDriver::updateRC(uint16_t throttleChannel) {
-    if (throttleChannel <= TransmitterConstants::deadbandBounds[1] && throttleChannel >= TransmitterConstants::deadbandBounds[0]) {
-      targetValues.brakeCommand = 0.0f;
+  void VescDriver::updateRC(uint16_t throttleChannel, uint16_t brakeChannel) {
+    throttleChannel = constrain(throttleChannel, TransmitterConstants::minRC, TransmitterConstants::maxRC);
+    brakeChannel = constrain(brakeChannel, TransmitterConstants::minRC, TransmitterConstants::maxRC);
+
+    if (brakeChannel <= TransmitterConstants::deadbandBounds[0]) {
       targetValues.erpmCommand = 0.0f;
+      targetValues.currentCommand = 0.0f;
+      targetValues.brakeCommand = constrain(
+        mapRCToRange(
+          brakeChannel,
+          TransmitterConstants::minRC,
+          TransmitterConstants::deadbandBounds[0],
+          ControlConstants::vescMaxBrake,
+          ControlConstants::vescMinBrake
+        ),
+        ControlConstants::vescMinBrake,
+        ControlConstants::vescMaxBrake
+      );
 
       rpmLimit.setLastValue(0.0f);
+      currentLimit.setLastValue(0.0f);
+      vesc.setBrakeCurrent(targetValues.brakeCommand);
+      return;
+    }
+
+    targetValues.brakeCommand = 0.0f;
+
+    if (throttleChannel <= TransmitterConstants::deadbandBounds[1] && throttleChannel >= TransmitterConstants::deadbandBounds[0]) {
+      targetValues.erpmCommand = 0.0f;
+      targetValues.currentCommand = 0.0f;
+
+      rpmLimit.setLastValue(0.0f);
+      currentLimit.setLastValue(0.0f);
 
       vesc.setBrakeCurrent(targetValues.brakeCommand);
       vesc.setCurrent(0.0f);
-    } else if (throttleChannel <= TransmitterConstants::deadbandBounds[0] && targetValues.erpmCommand == 0) {
-      targetValues.brakeCommand = map(
-        throttleChannel,
-        TransmitterConstants::minRC,
-        TransmitterConstants::midRC,
-        ControlConstants::vescMaxBrake,
-        ControlConstants::vescMinBrake
-      );
-
-      vesc.setBrakeCurrent(targetValues.brakeCommand);
-    } else if (throttleChannel >= TransmitterConstants::deadbandBounds[1] && targetValues.brakeCommand == 0) {
-      targetValues.erpmCommand = constrain(
-        rpmLimit.calculate(map(
+    } else if (throttleChannel <= TransmitterConstants::deadbandBounds[0]) {
+      targetValues.erpmCommand = rpmLimit.calculate(constrain(
+        mapRCToRange(
           throttleChannel,
-          TransmitterConstants::midRC,
+          TransmitterConstants::minRC,
+          TransmitterConstants::deadbandBounds[0],
+          -ControlConstants::vescMaxReverseERPM,
+          ControlConstants::vescMinERPM
+        ),
+        -ControlConstants::vescMaxReverseERPM,
+        ControlConstants::vescMinERPM
+      ));
+
+      targetValues.currentCommand = currentLimit.calculate(constrain(
+        mapRCToRange(
+          throttleChannel,
+          TransmitterConstants::minRC,
+          TransmitterConstants::deadbandBounds[0],
+          -ControlConstants::vescMaxReverseCurrent,
+          0.0f
+        ),
+        -ControlConstants::vescMaxReverseCurrent,
+        0.0f
+      ));
+
+      vesc.setCurrent(targetValues.currentCommand);
+    } else if (throttleChannel >= TransmitterConstants::deadbandBounds[1]) {
+      targetValues.currentCommand = 0.0f;
+      currentLimit.setLastValue(0.0f);
+      targetValues.erpmCommand = rpmLimit.calculate(constrain(
+        mapRCToRange(
+          throttleChannel,
+          TransmitterConstants::deadbandBounds[1],
           TransmitterConstants::maxRC,
           ControlConstants::vescMinERPM,
           ControlConstants::vescMaxERPM
-        )),
+        ),
         ControlConstants::vescMinERPM,
         ControlConstants::vescMaxERPM
-      );
+      ));
 
-      vesc.setRPM(rpmLimit.calculate(targetValues.erpmCommand));
-    } else {
-      Serial.println("Bad Value");
+      vesc.setRPM(targetValues.erpmCommand);
     }
   }
 
@@ -54,6 +104,7 @@ namespace MotorControls {
   void VescDriver::updateAuto(float erpm, float brake) {
     targetValues.erpmCommand = erpm;
     targetValues.brakeCommand = brake;
+    targetValues.currentCommand = 0.0f;
 
     if (brake > 0.0f) {
       vesc.setBrakeCurrent(brake);
@@ -129,7 +180,12 @@ namespace MotorControls {
 
   
   void VescDriver::printState() {
-    Serial.printf("ERPM - %.2f\t| Brake Current - %.2f\n", targetValues.erpmCommand, targetValues.brakeCommand);
+    Serial.printf(
+      "ERPM - %.2f\t| Motor Current - %.2f\t| Brake Current - %.2f\n",
+      targetValues.erpmCommand,
+      targetValues.currentCommand,
+      targetValues.brakeCommand
+    );
   }
 
 

@@ -30,6 +30,7 @@ namespace MotorControls {
   struct VescValues {         
     float erpmCommand = 0.0f;  // ERPM input
     float brakeCommand = 0.0f; // Brake current
+    float currentCommand = 0.0f; // Motor current
   };
 
 
@@ -45,6 +46,7 @@ namespace MotorControls {
       VescValues targetValues {0, 0}; // Output values to VESC
 
       SlewRateLimiter rpmLimit {ControlConstants::vescERPMLimit};
+      SlewRateLimiter currentLimit {ControlConstants::vescReverseCurrentLimit};
 
       String vescDebug;         // VESC debug message as a string 
       String vescErrorString;   // VESC error message as a string
@@ -60,9 +62,10 @@ namespace MotorControls {
       /**
        * @brief Controls the outputs of the VESC based on RC values
        * 
-       * @param throttleChannel Channel value from the RC channel 
+       * @param throttleChannel Channel value from the RC throttle channel
+       * @param brakeChannel Channel value from the RC brake channel
        */
-      void updateRC(uint16_t throttleChannel);
+      void updateRC(uint16_t throttleChannel, uint16_t brakeChannel);
 
 
       /**

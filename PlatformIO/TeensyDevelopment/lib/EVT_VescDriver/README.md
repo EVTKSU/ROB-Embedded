@@ -9,7 +9,7 @@ it also sets up for error handling.
 ## Important Methods
 
 There are three methods included in the `VescDriver` driver that ennables users to control the VESC FlipSky 75100 motor controller: 
-  1. [`updateRC(uint16_t throttleChannel)`](#update)
+  1. [`updateRC(uint16_t throttleChannel, uint16_t brakeChannel)`](#update)
   2. [`updateAuto(float erpm, float brake)`](#update)
   3. [`errorToString(mc_fault_code VESC_ERR)`](#error-handling)
 
@@ -17,9 +17,9 @@ There are three methods included in the `VescDriver` driver that ennables users 
 
 ## Update
 
-There are two update methods: `updateRC(uint16_t throttleChannel)` and `updateAuto(float erpm, float brake)`. 
+There are two update methods: `updateRC(uint16_t throttleChannel, uint16_t brakeChannel)` and `updateAuto(float erpm, float brake)`. 
 
-The `updateRC(uint16_t throttleChannel)` method takes input from an RC reciever, maps the values, and changes the values sent to the VESC to drive the motor forward and handle braking. The values changed will be the braking current and the ERPM that the vesc will be providing to the motor. In the methood, the ERPM cannot be changed whilst the brake current is being set, and vice-versa.
+The `updateRC(uint16_t throttleChannel, uint16_t brakeChannel)` method takes input from an RC reciever, maps the values, and changes the values sent to the VESC. Forward throttle commands positive ERPM. Reverse throttle commands negative motor current so it can drive backward from rest. The separate brake channel commands VESC braking current and overrides throttle while active.
 
 The `updateAuto(float erpm, float brake)` is meant to be used when the teensy is recieving commands from Automode (or self driving). This method recieves brake current and ERPM values directly from the Auto controls and pushes them to the VESC motor controller. This method also limits the values to where brake current and ERPM cannot be set at the same time.
 
