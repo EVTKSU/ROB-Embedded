@@ -194,20 +194,18 @@ void loop() {
       lastPrintMessage = millis();
     }
 
-    // Skips the loop if the SBUS gets a bad frame 
-    if (!ModuleConstants::transmitter.update()) {
+    const bool transmitterUpdated = ModuleConstants::transmitter.update();
+
+    if (!transmitterUpdated) {
       // Prints to the Serial Monitor about a bad frame every 5.0 seconds
       if ((currentTime - lastWaitingPrint) >= 5'000UL) {
         Serial.println("Waiting for valid SBUS frame...");
         lastWaitingPrint = millis();
       }
-
-      lastUpdate = millis();
-      return;
+    } else {
+      // Runs the current state of the state machine only after a valid SBUS update.
+      ModuleConstants::stateMachine.runState();
     }
-
-    // Runs the current state of the state machine 
-    ModuleConstants::stateMachine.runState();
 
     // Records the last update timestamp
     lastUpdate = millis();
