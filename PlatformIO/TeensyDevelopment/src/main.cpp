@@ -51,6 +51,7 @@ void setup() {
     if (ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWF, Signals::ControlRC::mapSwitches) && !ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWH, Signals::ControlRC::mapSwitches)) {
       // Turn off the LED beacon and go into RC state 
       ModuleConstants::light.setColorState(IOConstants::colorOff);
+      digitalWrite(IOConstants::eBrakeRelay, HIGH);
       ModuleConstants::stateMachine.setState(Signals::States::RC);
     }
   });
@@ -144,6 +145,7 @@ void setup() {
   ModuleConstants::stateMachine.defineState(Signals::States::RESET, [&] () {
     // Set the LED beacon to off
     ModuleConstants::light.setColorState(IOConstants::colorOff);
+    digitalWrite(IOConstants::eBrakeRelay, LOW);
 
     // Reset the ODrive and clear errors 
     ModuleConstants::odrive.reset();
@@ -203,6 +205,10 @@ void loop() {
         lastWaitingPrint = millis();
       }
     } else {
+      if (ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::SWH, Signals::ControlRC::mapSwitches)) {
+        digitalWrite(IOConstants::eBrakeRelay, LOW);
+      }
+
       // Runs the current state of the state machine only after a valid SBUS update.
       ModuleConstants::stateMachine.runState();
     }

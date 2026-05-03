@@ -28,8 +28,10 @@ namespace Constants {
     static constexpr float vescMaxERPM = 7'500.0f;
     static constexpr float vescMaxReverseERPM = 7'500.0f;
     static constexpr float vescERPMLimit = 5'500.0f;
-    static constexpr float vescMaxReverseCurrent = 20.0f;
-    static constexpr float vescReverseCurrentLimit = 30.0f;
+    static constexpr float vescMaxReverseCurrent = 140.0f;
+    static constexpr float vescReverseCurrentLimit = 80.0f;
+    static constexpr float vescLaunchBoostCurrent = 80.0f;
+    static constexpr unsigned long vescLaunchBoostDurationMs = 5'000UL;
 
     static constexpr int vescPolePairs = 4;
 

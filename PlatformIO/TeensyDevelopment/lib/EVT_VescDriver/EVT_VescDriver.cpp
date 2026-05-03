@@ -115,6 +115,15 @@ namespace MotorControls {
   }
 
 
+  void VescDriver::updateAutoCurrent(float erpm, float current) {
+    targetValues.erpmCommand = erpm;
+    targetValues.brakeCommand = 0.0f;
+    targetValues.currentCommand = current;
+
+    vesc.setCurrent(current);
+  }
+
+
   String VescDriver::errorToString(mc_fault_code VESC_ERR) {
     switch (VESC_ERR) {
       case (mc_fault_code::FAULT_CODE_NONE): 

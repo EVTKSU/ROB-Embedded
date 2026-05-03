@@ -75,7 +75,7 @@ namespace Signals {
        * @brief Gets an autonomous command packet from the Panda as a string.
        * 
        * Expected autonomous command format:
-       * rpm,steering_angle,brake_current,emergency_flag
+       * erpm,steering_degrees,emergency,state,brake_percent
        * 
        * @return The received command packet, or empty string if no packet exists.
        */

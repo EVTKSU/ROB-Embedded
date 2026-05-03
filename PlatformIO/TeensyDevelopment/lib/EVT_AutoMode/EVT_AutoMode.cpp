@@ -107,7 +107,7 @@ void CtrlOdrive() {
 
 void updateAutonomousMode() {
   // Deprecated helper path. Current firmware path is AutoDriver::updateAuto()
-  // with packet format "erpm,steering_degrees,emergency,state,dynamic_brake".
+  // with packet format "erpm,steering_degrees,emergency,state,brake_percent".
   std::string rawCommands = ModuleConstants::ethernet.receiveUDP();
 
   Serial.print(" | Throttle(rpm): ");
@@ -173,7 +173,7 @@ namespace Signals {
 
       vescERPM = 0.0;
       steeringAngle = 0.0;
-      dynamicBrakePercent = 0.0;
+      requestedBrakePercent = 0.0;
       emergencyFlag = false;
       holdStateActive = false;
       commandState.clear();
@@ -199,7 +199,11 @@ namespace Signals {
             commandState = normalizeState(token);
             break;
           case 4:
-            dynamicBrakePercent = constrain(atof(token), 0.0f, 1.0f);
+            requestedBrakePercent = constrain(
+              atof(token),
+              0.0f,
+              100.0f
+            );
             break;
         }
 
@@ -222,9 +226,10 @@ namespace Signals {
             Serial.println("Emergency Flag encountered");
           }
   
+          launchBoostActive = false;
+          wasForwardCommandActive = false;
           updateVESC(0.0f, 20.0f);
           updateODrive(0.0f);
-          ModuleConstants::dynamicBrake.update(1.0f);
 
           ModuleConstants::stateMachine.setErrorState();
         } else if (holdStateActive) {
@@ -233,24 +238,49 @@ namespace Signals {
             Serial.println(commandState.c_str());
           }
 
+          launchBoostActive = false;
+          wasForwardCommandActive = false;
           updateODrive(0.0f);
           updateVESC(0.0f, 0.0f);
-          ModuleConstants::dynamicBrake.update(0.0f);
         } else { // Update the ODrive and VESC if no error occurs 
           updateODrive(steeringAngle);
-          if (!ModuleConstants::dynamicBrake.update(dynamicBrakePercent)) {
-            ModuleConstants::stateMachine.setErrorState();
-            return;
-          }
 
-          if (vescERPM < 0.0f) {
+          if (requestedBrakePercent > 0.0f) {
+            launchBoostActive = false;
+            wasForwardCommandActive = false;
+            brakeCurrent = (requestedBrakePercent / 100.0f) * ControlConstants::vescMaxBrake;
+            updateVESC(0.0f, brakeCurrent);
+          } else if (vescERPM < 0.0f) {
+            launchBoostActive = false;
+            wasForwardCommandActive = false;
             brakeCurrent = constrain(
               (-vescERPM / ControlConstants::vescMaxERPM) * ControlConstants::vescMaxBrake,
               ControlConstants::vescMinBrake,
               ControlConstants::vescMaxBrake
             );
             updateVESC(0.0f, brakeCurrent);
+          } else if (vescERPM > 0.0f) {
+            const unsigned long now = millis();
+
+            if (!wasForwardCommandActive && !launchBoostActive) {
+              launchBoostActive = true;
+              launchBoostStartTime = now;
+            }
+
+            if (
+              launchBoostActive
+              && (now - launchBoostStartTime) < ControlConstants::vescLaunchBoostDurationMs
+            ) {
+              updateVESCLaunchBoost(vescERPM);
+            } else {
+              launchBoostActive = false;
+              updateVESC(vescERPM, 0.0f);
+            }
+
+            wasForwardCommandActive = true;
           } else {
+            launchBoostActive = false;
+            wasForwardCommandActive = false;
             brakeCurrent = 0.0f;
             updateVESC(vescERPM, 0.0f);
           }
@@ -275,6 +305,14 @@ namespace Signals {
     ModuleConstants::vesc.updateAuto(
       constrain(erpm, ControlConstants::vescMinERPM, ControlConstants::vescMaxERPM), 
       current
+    );
+  }
+
+
+  void AutoDriver::updateVESCLaunchBoost(float erpm) {
+    ModuleConstants::vesc.updateAutoCurrent(
+      constrain(erpm, ControlConstants::vescMinERPM, ControlConstants::vescMaxERPM),
+      ControlConstants::vescLaunchBoostCurrent
     );
   }
 }

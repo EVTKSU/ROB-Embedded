@@ -32,13 +32,16 @@ namespace Signals {
       double brakeCurrent;     // Brake current in amps
 
       double steeringAngle;    // Steering angle in degrees
-      double dynamicBrakePercent; // Brake pedal command, 0.0 to 1.0
+      double requestedBrakePercent; // Brake command requested from UDP packet, 0.0 to 100.0
 
       bool emergencyFlag;      // Condition to tell if an error occured
       bool holdStateActive;    // Neutral command when remote state requests hold/manual
+      bool launchBoostActive = false; // AUTO start assist is currently commanding current
+      bool wasForwardCommandActive = false; // Previous AUTO command requested forward motion
+      unsigned long launchBoostStartTime = 0;
       std::string commandState;// State text from UDP packet when present
 
-      const int numFields = 5; // Packet: "erpm,steering_degrees,emergency,state,dynamic_brake"
+      const int numFields = 5; // Packet: "erpm,steering_degrees,emergency,state,brake_percent"
       char udpBuffer[128];     // Copy of the received UDP data
       char * token;         
       int index; 
@@ -46,7 +49,7 @@ namespace Signals {
       /**
        * @brief Updates the autonomous commands given a UDP packet
        * 
-       * @note Expected format is "erpm,steering_degrees,emergency,state,dynamic_brake"
+       * @note Expected format is "erpm,steering_degrees,emergency,state,brake_percent"
        * 
        * @param udpData UDP packet to parse and use for updates 
        */
@@ -70,6 +73,14 @@ namespace Signals {
        * @param current Brake current measured in amps
        */
       void updateVESC(float erpm, float current);
+
+
+      /**
+       * @brief Updates the VESC with direct drive current for AUTO launch assist.
+       *
+       * @param erpm ERPM setpoint to keep for telemetry
+       */
+      void updateVESCLaunchBoost(float erpm);
   };
 }
 

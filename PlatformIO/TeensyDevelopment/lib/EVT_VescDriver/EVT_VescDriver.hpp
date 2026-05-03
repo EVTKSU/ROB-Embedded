@@ -76,6 +76,14 @@ namespace MotorControls {
        */
       void updateAuto(float erpm, float brake);
 
+      /**
+       * @brief Controls the VESC with direct motor current for AUTO launch boost.
+       *
+       * @param erpm ERPM setpoint to keep in the target state for telemetry
+       * @param current Motor current in amps
+       */
+      void updateAutoCurrent(float erpm, float current);
+
 
       /**
        * @brief Transcribes errors from the VESC to Strings and prints them
