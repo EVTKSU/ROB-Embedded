@@ -22,15 +22,15 @@ namespace Constants {
    */
   struct ControlConstants {
     static constexpr float vescMinBrake = 0.0f;
-    static constexpr float vescMaxBrake = 80.0f;
+    static constexpr float vescMaxBrake = 140.0f;
     
     static constexpr float vescMinERPM = 0.0f;
     static constexpr float vescMaxERPM = 7'500.0f;
     static constexpr float vescMaxReverseERPM = 7'500.0f;
-    static constexpr float vescERPMLimit = 5'500.0f;
-    static constexpr float vescMaxReverseCurrent = 140.0f;
+    static constexpr float vescERPMLimit = 7'500.0f;
+    static constexpr float vescMaxReverseCurrent = 150.0f;
     static constexpr float vescReverseCurrentLimit = 80.0f;
-    static constexpr float vescLaunchBoostCurrent = 80.0f;
+    static constexpr float vescLaunchBoostCurrent = 200.0f; // i set this too high for now so we need to change vesc limits.
     static constexpr unsigned long vescLaunchBoostDurationMs = 5'000UL;
 
     static constexpr int vescPolePairs = 4;
