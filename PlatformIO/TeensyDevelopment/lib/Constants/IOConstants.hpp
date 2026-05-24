@@ -41,7 +41,7 @@ namespace Constants {
 
     static constexpr double updateFrequency = 80.0;
     static constexpr double ledBlinkFrequency = 1.0;
-    static constexpr double telemetryFrequency = 1.0;
+    static constexpr double telemetryFrequency = 8.0;
     static constexpr double printSerialFrequency = 10.0;
 
     static const bool telemetryToSerial = false;

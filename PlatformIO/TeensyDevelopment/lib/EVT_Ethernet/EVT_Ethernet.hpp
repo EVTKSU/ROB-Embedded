@@ -41,32 +41,25 @@ namespace Signals {
       /**
        * @brief Sends the telemetry packet.
        * 
-       * @param error Boolean to denote an error in the low level 
        * @param state Current state of the State Machine
+       * @param oDrvTarget ODrive target steering angle in degrees
+       * @param throttle RC throttle input
+       * @param steer RC steering input
        * @param rpm VESC mechanical RPM
        * @param steering ODrive steering angle in degrees
-       * @param oDrvVolt ODrive voltage
-       * @param vescVolt VESC voltage
-       * @param oDrvCurr ODrive current
-       * @param vescCurr VESC current
-       * @param oDrvTarget ODrive target steering angle in degrees
-       * @param steer RC steering input
-       * @param throttle RC throttle input
        * @param driveEncoderRevolutions Drive encoder revolutions accumulated since firmware startup
        * @param driveEncoderCount Raw drive encoder quadrature count accumulated since firmware startup
+       *
+       * Telemetry CSV format (in order):
+       * state,rpm,steering_deg,odrv_target_deg,throttle,steer,drive_encoder_revolutions,drive_encoder_count
        */
       void sendTelemetry(
-        bool error,
         const char * state,
         float rpm,
         float steering,
-        float oDrvVolt,
-        float vescVolt,
-        float oDrvCurr,
-        float vescCurr,
         float oDrvTarget,
-        uint16_t steer,
         uint16_t throttle,
+        uint16_t steer,
         double driveEncoderRevolutions,
         int32_t driveEncoderCount
       );

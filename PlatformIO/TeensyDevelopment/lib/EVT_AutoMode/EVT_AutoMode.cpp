@@ -123,17 +123,12 @@ void updateAutonomousMode() {
   CtrlVesc();
   CtrlOdrive();
   ModuleConstants::ethernet.sendTelemetry(
-    ModuleConstants::stateMachine.checkError(),
     ModuleConstants::stateMachine.toString(ModuleConstants::stateMachine.getState()),
     (float)(ModuleConstants::vesc.getState().erpmCommand / ControlConstants::vescPolePairs),
     ModuleConstants::odrive.getCachedSteeringDegrees(),
-    ModuleConstants::odrive.getCachedVoltage(),
-    ModuleConstants::vesc.getVoltage(),
-    ModuleConstants::odrive.getCachedCurrent(),
-    ModuleConstants::vesc.getCurrent(),
     ModuleConstants::odrive.getTargetDegrees(),
-    ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false),
     ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::LEFT_Y, false),
+    ModuleConstants::transmitter.getChannelValue(Signals::ChannelRC::RIGHT_X, false),
     ModuleConstants::driveEncoder.getRevolutionsFromStart(),
     ModuleConstants::driveEncoder.getCount()
   );

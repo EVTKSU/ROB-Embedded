@@ -53,35 +53,27 @@ namespace Signals {
 
 
   void EthernetEVT::sendTelemetry(
-    bool error,
     const char * state,
     float rpm,
     float steering,
-    float oDrvVolt,
-    float vescVolt,
-    float oDrvCurr,
-    float vescCurr,
     float oDrvTarget,
-    uint16_t steer,
     uint16_t throttle,
+    uint16_t steer,
     double driveEncoderRevolutions,
     int32_t driveEncoderCount
   ) {
     snprintf(
       telemetryBuffer,
       sizeof(telemetryBuffer),
-      "%d,%s,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%d,%d,%0.6f,%ld",
-      error,
+      // CSV format:
+      // state,rpm,steering_deg,odrv_target_deg,throttle,steer,drive_encoder_revolutions,drive_encoder_count
+      "%s,%0.2f,%0.2f,%0.2f,%u,%u,%0.6f,%ld",
       state,
       rpm,
       steering,
-      oDrvVolt,
-      vescVolt,
-      oDrvCurr,
-      vescCurr,
       oDrvTarget,
-      steer,
-      throttle,
+      static_cast<unsigned>(throttle),
+      static_cast<unsigned>(steer),
       driveEncoderRevolutions,
       static_cast<long>(driveEncoderCount)
     );
